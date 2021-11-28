@@ -1,0 +1,861 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>Mysql索引设计建议</title>
+      <link href="/record/2021/11/28/Mysql%E7%B4%A2%E5%BC%95%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99/"/>
+      <url>/record/2021/11/28/Mysql%E7%B4%A2%E5%BC%95%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99/</url>
+      
+        <content type="html"><![CDATA[<ol><li><code>MySQL</code>索引类型</li></ol><ul><li>按字段特性来划分有：主键索引，唯一索引，普通索引</li><li>按字段个数划分有：单列索引，组合索引</li><li>按数据结构划分有：B+tree、Hash、全文索引</li><li>按物理存储划分有：聚簇索引，辅助索引</li></ul><ol start="2"><li>常用查看/优化索引的命令</li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#查看某个表中已有索引情况</span><br><span class="line"><span class="keyword">SHOW</span> INDEX <span class="keyword">FROM</span> TABLE_NAME;</span><br><span class="line"># 栗子</span><br><span class="line"><span class="keyword">SHOW</span> INDEX <span class="keyword">FROM</span> `<span class="keyword">user</span>`;</span><br></pre></td></tr></table></figure><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody><tr><td><code>table</code></td><td>表示创建索引的数据表名。</td></tr><tr><td><code>non_unique</code></td><td>表示该索引是否是唯一索引。若不是唯一索引，则该列的值为 1；若是唯一索引，则该列的值为 0。</td></tr><tr><td><code>key_name</code></td><td>表示索引的名称。</td></tr><tr><td><code>seq_in_index</code></td><td>表示该列在索引中的位置，如果索引是单列的，则该列的值为 1；如果索引是组合索引，则该列的值为每列在索引定义中的顺序。</td></tr><tr><td><code>column_name</code></td><td>表示定义索引的列字段。</td></tr><tr><td><code>collation</code></td><td>表示列以何种顺序存储在索引中。在 <code>MySQL</code> 中，升序显示值“<code>A</code>”（升序），若显示为 <code>NULL</code>，则表示无分类。</td></tr><tr><td><code>cardinality</code></td><td>索引中唯一值数目的估计值。基数根据被存储为整数的统计数据计数，所以即使对于小型表，该值也没有必要是精确的。基数越大，当进行联合时，<code>MySQL</code> 使用该索引的机会就越大。</td></tr><tr><td><code>sub_part</code></td><td>表示列中被编入索引的字符的数量。若列只是部分被编入索引，则该列的值为被编入索引的字符的数目；若整列被编入索引，则该列的值为 <code>NULL</code>。</td></tr><tr><td><code>packed</code></td><td>指示关键字如何被压缩。若没有被压缩，值为<code>NULL</code>。</td></tr><tr><td><code>NULL</code></td><td>用于显示索引列中是否包含 <code>NULL</code>。若列含有 <code>NULL</code>，该列的值为 <code>YES</code>。若没有，则该列的值为 <code>NO</code>。</td></tr><tr><td><code>index_type</code></td><td>显示索引使用的类型和方法（<code>BTREE</code>、<code>FULLTEXT</code>、<code>HASH</code>、<code>RTREE</code>）。</td></tr><tr><td><code>comment</code></td><td>显示评注。</td></tr></tbody></table><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#查看<span class="keyword">SQL</span>命中索引情况</span><br><span class="line">EXPLAIN <span class="keyword">SQL</span>;</span><br><span class="line"># 栗子</span><br><span class="line">EXPLAIN <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> `<span class="keyword">user</span>`;</span><br></pre></td></tr></table></figure><p>字段解释见<a href="https://www.cnblogs.com/xuanzhi201111/p/4175635.html">这里</a>。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#查看当前数据库中索引使用情况</span><br><span class="line"><span class="keyword">SHOW</span> STATUS <span class="keyword">LIKE</span> <span class="string">&#x27;Handler_read%&#x27;</span>;</span><br></pre></td></tr></table></figure><ol start="3"><li>索引设计的原则</li></ol><ul><li>适合索引的列是出现在<code>where</code>子句中的列，或者连接子句中指定的列；</li><li>基数较小的类，索引效果较差，没有必要在此列建立索引；</li><li>使用短索引，如果对长字符串列进行索引，应该指定一个前缀长度，这样能够节省大量索引空间；</li><li>不要过度索引。索引需要额外的磁盘空间，并降低写操作的性能。在修改表内容的时候，索引会进行更新甚至重构，索引列越多，这个时间就会越长。所以只保持需要的索引有利于查询即可。</li></ul><ol start="4"><li>索引优化的建议</li></ol><ul><li>查询返回结果大于全表总量的30%，别建索引走走全表扫描吧。</li><li>前导模糊查询不能命中索引，如果想要优化可以根据情况看是否能优化为非前导。</li><li>复合索引的情况下，查询条件不包含索引列最左边部分（不满足最左原则），不会命中符合索引。</li><li><code>union</code>、<code>in</code>、<code>or</code>都能够命中索引，建议使用in。</li><li>用<code>or</code>分割开的条件，如果<code>or</code>前的条件中列有索引，而后面的列中没有索引，那么涉及到的索引都不会被用到。</li><li>负向条件查询不能使用索引（比如说&lt;&gt;,<code>not in</code>），可以优化为<code>in</code>查询。</li><li>范围条件查询可以命中索引。范围条件有：&lt;、&lt;=、&gt;、&gt;=、<code>between</code>等。</li><li>数据库执行计算不会命中索引。（计算最好不要放在<code>sql</code>中，而应该放在业务逻辑中）。</li><li>建立索引的列，不允许为<code>NULL</code>，其实数据表设计都尽量不要有<code>NULL</code>。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>集群环境下的多定时任务处理</title>
+      <link href="/record/2021/11/07/%E5%A4%9A%E5%AE%9E%E4%BE%8B%E4%B8%8B%E7%9A%84%E5%A4%9A%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E5%A4%84%E7%90%86/"/>
+      <url>/record/2021/11/07/%E5%A4%9A%E5%AE%9E%E4%BE%8B%E4%B8%8B%E7%9A%84%E5%A4%9A%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1%E5%A4%84%E7%90%86/</url>
+      
+        <content type="html"><![CDATA[<p>​        当我们在单体环境下写定时任务是一个简单的事情。但是当定时任务不止一个的时候就会出现一个问题，怎么管理这些定时任务？不进行管理，让他在代码中随意纷飞？如果过段时间出了问题就很尴尬，所以要想优雅的处理定时任务，我们需要达到以下几点。</p><ul><li>统一处理</li><li>定时任务可配置化，即不能为了修改定时任务而重启系统</li></ul><p>​        统一处理是为了便于定位解决问题和提高代码质量，定时任务可配置化是为了更优雅，举个栗子：当需求变更说定时任务的时间需要从一天一次变为一周一次时，我们去改动代码然后重新部署上线真的很繁琐。这样的话定时任务就最好不要写在业务代码中。这里来说一下常用的解决办法，使用<a href="https://www.xuxueli.com/xxl-job/">xxl-job</a>，这是一个常用的分布式任务调度平台，它的思路就是把专门有一个微服务去做任务监控与管理，项目则是另一个服务，当然当定时任务不超过十个的情况下用它还是有点过度引用的感觉，具体使用可以去看官方文档，作者是中国人文档易读。</p><p>​        当然如果定时任务比较少而不用一些三方平台的话，定时任务配置化这块就不太方便了。我们需要用再项目中将定时任务写到一个包里，切忌多人开发时分散的去写定时任务，这些应该是在项目开始就应该规划与约定好的。Java中对于实现定时任务的方式也有很多，比如说：<code>Quartz</code>，<code>Spring-Task</code>，还有<code>Java</code>本身的<code>Timer</code> 。在<code>SpringbBoot</code>下，由于<code>Spring-Task</code>的以注解形式实现比较方便，所以我们一般用它实现定时任务。</p><p>​        这会我们说的定时任务都是在单机上执行的，如果说系统需要多实例运行，即一个<code>nginx</code>负载着多个后端节点，那么这时的定时任务还能正常执行吗？那得看定时任务干什么了，定时任务删东西还好，多个定时任务同时删除一些数据，前一个定时任务删除完后，后一个定时任务可能判断好像没什么要删除了，有时候会造成资源浪费，并不会造成可视的问题，不过我们最好也需要做处理。但是比如说多个定时任务一起发邮件那可就出大问题了。用户会收到数份一模一样的邮件。</p><p>​        所以说写定时任务的前就要想到这里，那怎样去预防这个问题呢，答案就是上锁！我们需要设置一个锁，每次到约定时间时，仅有一个实例可以拿到锁去执行定时任务。常见的几种定时任务实现：</p><ul><li><code>redis</code>分布式锁</li></ul><p>​        我们使用<code>redis</code>的<a href="https://www.runoob.com/redis/strings-setnx.html">setnx</a>命令,我们可以通过<code>setnx</code>将一个<code>key</code>和<code>value</code>写到<code>redis</code>中，当这个<code>key</code>不存在时，<code>redis</code>会正常写入，返回<code>1</code>。当在其中已经存在当前准备写入的<code>key</code>时，<code>redis</code>会插入失败，返回<code>0</code>。</p><p>​        当多个实例准备执行定时任务时，通过<code>setnx</code>用同一个<code>key</code>去插入数据，仅有插入成功返回1的实例去执行任务。</p><p>​        我们简单写一下伪代码：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//工具类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TaskUtil</span></span>&#123;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//引入RedisTemplate对象</span></span><br><span class="line">  <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate redisTemplate;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//竞争锁方法</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Boolean <span class="title">getRedisLock</span><span class="params">(String key, String value, Long limitTime)</span></span>&#123;</span><br><span class="line">      <span class="comment">//尝试向redis写入key</span></span><br><span class="line">      <span class="keyword">if</span>(redisTemplate.opsForValue().setIfAbsent(key,value))&#123;</span><br><span class="line">            <span class="comment">// 设置锁的有效时间，防止死锁</span></span><br><span class="line">            redisTemplate.expire(key,limitTime,TimeUnit.MILLISECONDS);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//定时任务类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduledService</span> </span>&#123;</span><br><span class="line">  <span class="comment">//引入刚写的工具类</span></span><br><span class="line">  <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> TaskUtil util;</span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;0/5 * * * * *&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">scheduled</span><span class="params">()</span></span>&#123;</span><br><span class="line">      <span class="keyword">if</span>(util.getRedisLock(<span class="string">&quot;lock&quot;</span>,<span class="string">&quot;lock1&quot;</span>,<span class="number">1L</span>))&#123;</span><br><span class="line">          System.out.println(<span class="string">&quot;1号实例的定时任务&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><ul><li><p><code>mysql</code>锁</p><p>​    我的思路是新建一张<code>TASK_LOCK</code>表。</p><table><thead><tr><th>ID</th><th>TASK_NAME</th><th>LOCK_TMP</th></tr></thead><tbody><tr><td>主键</td><td>定时任务标识</td><td>锁</td></tr></tbody></table><p>​    <code>LOCK_TMP</code>字段，默认为0。有几个定时任务就加几行数据，定时任务设置仅<code>LOCK_TMP = 0</code>时执行定时任务。执行时根据<code>TASK_NAME</code>查询<code>LOCK_TMP</code>，当查到<code>LOCK_TMP</code>字段为<code>0</code>时，修改它为<code>1</code>。再执行定时任务，执行完成后再将它的值改成<code>0</code>。</p></li><li><p><code>zookeeper</code>等其他调度中心</p><p>既然都用上一些调度中心了，项目体量也算比较大了，这里经验不足，不做推荐，但感觉直接<code>xxl-job</code>挺好。</p></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 定时任务 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>一次接口分析优化实例</title>
+      <link href="/record/2021/10/31/%E4%B8%80%E6%AC%A1%E6%8E%A5%E5%8F%A3%E5%88%86%E6%9E%90%E4%BC%98%E5%8C%96%E5%AE%9E%E4%BE%8B/"/>
+      <url>/record/2021/10/31/%E4%B8%80%E6%AC%A1%E6%8E%A5%E5%8F%A3%E5%88%86%E6%9E%90%E4%BC%98%E5%8C%96%E5%AE%9E%E4%BE%8B/</url>
+      
+        <content type="html"><![CDATA[<p>​    之前写的一个交易调用的接口今天在用的时候发现接口调用的响应时间竟高达15～17s左右，之前埋的坑到现在爆发了，还是得解决。</p><p>​    先简单描述一下接口内容（伪代码）：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//接口的service层</span></span><br><span class="line"><span class="function"><span class="keyword">public</span>  JSONArray <span class="title">trans</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">JSONArray res = <span class="keyword">new</span> JSONArray();</span><br><span class="line"></span><br><span class="line"><span class="comment">//1.调用其他接口A</span></span><br><span class="line">JSONArray tmp = A(data);</span><br><span class="line"></span><br><span class="line"><span class="comment">//2.对tmp做处理</span></span><br><span class="line">JSONArray convert  = convert(tmp);</span><br><span class="line"></span><br><span class="line"><span class="comment">//3.将convert作为接口B入参，调用接口B</span></span><br><span class="line"><span class="keyword">for</span>(Object o : convert)&#123;</span><br><span class="line">res.add(B(convert));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> res;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure><p>​    我们再来描述一下接口的内容：这个接口不涉及数据库的操作，我把它分为三个部分：在1.处由于A接口是一个分页查询的问题，这里要获取完整A接口的内容会执行多次A接口。在2.处这里会对tmp做处理转换，会用到双重for循环。3.处其实就是将A接口查出的数据作为入参来对B接口进行多次查询。</p><p>​    整个接口的响应时间是十多秒，首先我应该判断是哪一部分耗费了大量时间，于是我修改了一下接口如下：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//接口的service层</span></span><br><span class="line"><span class="function"><span class="keyword">public</span>  JSONArray <span class="title">trans</span><span class="params">(String data)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">JSONArray res = <span class="keyword">new</span> JSONArray();</span><br><span class="line"></span><br><span class="line"><span class="comment">//1.调用其他接口A</span></span><br><span class="line">  Long begin1 = System.currentTimeMillis();</span><br><span class="line">JSONArray tmp = A(data);</span><br><span class="line">  Long end1 = System.currentTimeMillis();</span><br><span class="line">  System.out.println(<span class="string">&quot;time1 = &quot;</span>+ (end1-begin1)/<span class="number">1000</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//2.对tmp做处理</span></span><br><span class="line">  Long begin2 = System.currentTimeMillis();</span><br><span class="line">JSONArray convert  = convert(tmp);</span><br><span class="line">Long end2 = System.currentTimeMillis();</span><br><span class="line">  System.out.println(<span class="string">&quot;time2 = &quot;</span>+ (end2-begin2)/<span class="number">1000</span>);</span><br><span class="line">  </span><br><span class="line"><span class="comment">//3.将convert作为接口B入参，调用接口B</span></span><br><span class="line">  Long begin3 = System.currentTimeMillis();</span><br><span class="line"><span class="keyword">for</span>(Object o : convert)&#123;</span><br><span class="line">res.add(B(convert));</span><br><span class="line">&#125;</span><br><span class="line">Long end3 = System.currentTimeMillis();</span><br><span class="line">  System.out.println(<span class="string">&quot;time3 = &quot;</span>+ (end3-begin3)/<span class="number">1000</span>);</span><br><span class="line">  </span><br><span class="line"><span class="keyword">return</span> res;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure><p>​    在这里我分别计算了三部分代码块执行的时间，得出结论是：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">time1 = 1</span><br><span class="line">time2 = 0</span><br><span class="line">time3 = 16</span><br></pre></td></tr></table></figure><p>​    这里我们发现是接口慢主要是由于多次调用其他接口造成的，而在接口中的一些for循环并没有我们想象中的更浪费时间。事实上，在postman中单独调用一次B接口耗时约500ms，这个成本是很大的，我需要尽可能的少调用接口或者说一次请求尽可能请求更多内容。</p><p>​    在这个接口中，我发现convert中的内容很多是重复的，它们仅需要请求一次接口即可，我这里通过优化2.中的代码根据业务逻辑简化并给转换时顺便过滤去重了一下，convert的长度从几十降低到了个位数，我再次请求这个接口，耗时大约在2-3秒，目前也算是能用了，如果不修改AB接口或者整体的调用逻辑的话，其实也没有多少优化空间了。</p><p>​    PS：今天顺便跟前辈讨论了一下这个问题，主要是吐槽目前项目拉的很这个接口一样，很大一部分原因就是很多内容应该是包含在前端中而不应该全部都去请求后端接口，这样搞不卡才怪，奈何前端莫的经验，我也莫的经验且人微言轻且重构真的很费时间和资源，还是就这样吧hh。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 接口调优 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>三分钟认识单例模式</title>
+      <link href="/record/2021/10/17/%E4%B8%89%E5%88%86%E9%92%9F%E8%AE%A4%E8%AF%86%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/"/>
+      <url>/record/2021/10/17/%E4%B8%89%E5%88%86%E9%92%9F%E8%AE%A4%E8%AF%86%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/</url>
+      
+        <content type="html"><![CDATA[<p>1.什么是单例模式</p><p>​    在单例模式下，一个类只能有一个实例对象。</p><p>2.什么场景需要使用单例模式</p><ul><li>需要频繁实例化然后销毁的对象。 </li><li>创建对象时耗时过多或者耗资源过多，但又经常用到的对象。 </li><li>有状态的工具类对象。 </li><li>频繁访问数据库或文件的对象。 </li></ul><p>具体工作场景举例</p><ul><li>计数器</li><li>应用程序日志</li><li>数据库连接池/多线程的线程池</li></ul><p>2.单例模式的实现思路及方式</p><ul><li>饿汉模式</li></ul><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.example.demo.other;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@className</span>: ESingleTest</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>: 饿汉实现单例模式</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span>: diane</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span>: 2021/10/11</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ESingleTest</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 缺点：占内存</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ESingleTest</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    <span class="comment">// 刚开始先初始化一个实例</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ESingleTest instance = <span class="keyword">new</span> ESingleTest();  </span><br><span class="line">    <span class="comment">// 需要的时候直接取</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ESingleTest <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><ul><li><p>懒汉模式</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.example.demo.other;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@className</span>: LSingleTest</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>: 懒汉实现单例模式</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span>: diane</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span>: 2021/10/11</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LSingleTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LSingleTest</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    <span class="comment">// 创建一个null的实例</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> LSingleTest instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 懒汉</span></span><br><span class="line">    <span class="comment">// 缺点：方法上加锁，慢</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">static</span> LSingleTest <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//当多线程都取到instance为null时，这里单例就蚌埠住了</span></span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> LSingleTest(); <span class="comment">// 需要的时候再创建</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 进化版懒汉(双检锁)</span></span><br><span class="line">    <span class="comment">// 把方法上的锁拿进去了。</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> LSingleTest <span class="title">getInstancePlus</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>)&#123;  <span class="comment">// 一检</span></span><br><span class="line">            <span class="keyword">synchronized</span> (LSingleTest.class)&#123;  <span class="comment">// 二检</span></span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> LSingleTest();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><ul><li><p>总结</p><p>正常来说，使用饿汉单例即可，遇到内存瓶颈需要优化的时候再去考虑双检锁实现单例。</p></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 设计模式 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>秋梦</title>
+      <link href="/record/2021/10/04/%E7%A7%8B%E6%A2%A6/"/>
+      <url>/record/2021/10/04/%E7%A7%8B%E6%A2%A6/</url>
+      
+        <content type="html"><![CDATA[<p>我在大学念书。</p><p>有天我在教学楼三楼宿舍想小解，三楼有个公共卫生间，没想到只有女卫生间，无奈，我只能去二楼找找。</p><p>二楼有个阶梯教室，我下来需要穿过它，里面是低年级的学生们的课，现在正是课间，教室人挺多，我便让他们抬一抬脚的往下走，隐隐约约的我听见有个声音在说这个人好像我初恋啊。这股声音很熟悉，不过我没有第一时间找到声音的来源。</p><p>我继续往下走，去找卫生间。解决之后，我去窗户那看看，看到了一男一女，那女人又在跟男人说好像看见一个侧脸很像初恋的人的事，我看到她，没想到是佳琦。我的小学同学，也是我的初恋。</p><p>我当时脑子里在想什么我已经记不清了，我没有立马上去和她打招呼，可能看到她男朋友心理因素在搞怪。</p><p>我装作没看见的慢慢绕下去，渐渐走到他们附近，走到他们前面，等她认出我，我再跟她打招呼之类的。</p><p>一切都在按照我的想法进行，在他们面前晃悠了一会，她认出了我，我也顺理成章的跟她和她男朋友打了招呼。她在中间，我和她男朋友分别在右左两侧，我们就绕着校园随便瞎逛着。</p><p>走着走着，她悄悄跟男友说想拉一下我的手，回忆一下往昔，他很大度的答应了，我听到了他们的说话，一方面感觉到意外的狂喜，另一方面感受到她男友还是介意的，只不过不好表达。</p><p>她速度减慢，到了我的后面，我跟她男友并肩而行，然后她又突然加速追上了，不经意却又预谋已久的碰到了我的手，我心中触电，不敢看左边，拉了两秒中我就挣脱开了。</p><p>我不知道当时他是什么表情，不过当我再看他的时候他以一切回复如常。佳琦也好像意识到了什么变得乖巧起来，她走到最左边，让他在中间，拉起他的手。</p><p>就这样走着走着，路边有个小摊，他提议有些饿了想吃一点儿，小摊挺小的，我就说要不去远点地方吃，我请客。他同意了。</p><p>梦醒了。</p><p>PS：我对她的记忆也只有名字了，现实中我的初恋也不是她。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 梦 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>服务器磁盘100%占用问题</title>
+      <link href="/record/2021/08/03/%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A3%81%E7%9B%98100-%E5%8D%A0%E7%94%A8%E9%97%AE%E9%A2%98/"/>
+      <url>/record/2021/08/03/%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A3%81%E7%9B%98100-%E5%8D%A0%E7%94%A8%E9%97%AE%E9%A2%98/</url>
+      
+        <content type="html"><![CDATA[<p>今天服务器/home下挂载的磁盘占用100%告警，我在线上排查问题。</p><p>我先一套三连甩过去：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br><span class="line">du -h --max-depth=1</span><br><span class="line">ds -sh *</span><br></pre></td></tr></table></figure><p>发现目前<code>/home</code>下文件占的内容只占总容量的30%左右，那剩下的磁盘占用去哪了呢？</p><p>不得已，继续排查哪里有大文件，找一下之前删除的文件占用的磁盘。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof | grep delete</span><br></pre></td></tr></table></figure><p>一查下一跳，之前删除的文件基本都是假死脱身，然后就开始扫垃圾，杀掉这些进程。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kill -9 `lsof | grep delete | awk &#x27;&#123;print $2&#125;&#x27;` </span><br></pre></td></tr></table></figure><p>事情就告一段落，问题就解决了，但是为什么会出现这个问题呢？</p><p>这是因为要删除的文件还在被别的程序引用，<code>rm</code>掉这个文件只是删去了文件系统对它的一个索引，导致不能在文件夹中找到。实际上，它仍然存在，创建这个文件的进程往往存在对该文件的索引并且可能还在使用它。</p><p>举个例子，后台启动一个<code>jar</code>包：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -jar test.jar &amp;</span><br></pre></td></tr></table></figure><p>启动成功后，我们将删除它打印的日志文件<code>nohup.out</code>，但是<code>test.jar</code>对它实际上是依然有引用的，所以在<code>test.jar</code>运行期间删除<code>nohup.out</code>文件实际上是没有删掉的。</p><p>那么正确的删除方式是什么呢？</p><p>仅在没有链接时删除才释放该空间，用上面这个例子来说就是在<code>test.jar</code>停止运行的时候删除<code>nohup.out</code>文件才是真正被删除。当然我们在大多时候不清楚它究竟有没有被引用，但是需要了解这类情况以便我们能更好的解决问题。</p><p>顺便记住这个命令吧！</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof | grep delete</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 运维 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>七月末了回顾一下本月</title>
+      <link href="/record/2021/07/28/%E4%B8%83%E6%9C%88%E5%9B%9E%E9%A1%BE/"/>
+      <url>/record/2021/07/28/%E4%B8%83%E6%9C%88%E5%9B%9E%E9%A1%BE/</url>
+      
+        <content type="html"><![CDATA[<ol><li><p>这个月开始了我的加班生涯。</p></li><li><p>加班工资很低有点难受。</p></li><li><p>这个月体重并没有下降，因为加班和没有运动。</p></li><li><p>换了一个MacBook，M1芯片就是感觉不错，虽然是带风扇，但是目前用了一段时间风扇还没转过。我发现它好就好在尽可能的会给你一个沉浸的体验。</p></li><li><p>开始看Java核心技术卷I，不过是在断断续续的看，读的很慢。</p></li><li><p>禅与摩托车维修艺术，这本书我看了一半就扔下了，这本书是在我手机上看到。但是突然有一天我没看，之后就顺其自然的不看了。书写的有点枯燥，谈论哲学往往没有诙谐幽默的，扔了几天再拾起来就很困难了，因为这阵子没有刚开始看的那种一股作气的状态了（这是骗自己的借口），总之就是感觉无聊需要反复品味作者的想法表达的意思并试着接受它，这种感觉不喜欢。</p></li><li><p>最近北京又出现疫情，离我不远，小区戒严，只留一个远门作为出口，重新启用出入证，感觉疫情可能还会恶化，感觉又回到了去年五六月时的状态。</p></li><li><p>买了吉他好久没有摸过了。</p></li><li><p>突然想说一下工作：最近遇到的困扰就是在我准备干活的时候老有人烦我做各种支持。是那种每半个小时就有人拿或小或更小的找我，或者说有闲的没事干的人溜达到我这边准备跟我闲聊几句。真的有些难受，但是又不方便明说。每天晚上做总结的时候，回顾一下今天白天我做了什么，我就会发现，我早上就在做支持，下午大概能敲一个小时代码，其他时间就会被各种打断。</p></li><li><p>在知乎看到一个回答：</p><p>人是身体的奴隶。我们饿了需要吃饭，渴了需要喝水，肚子痛了需要排泄，看到漂亮的异性想要交配。人更是思维的奴隶。我们总是以为，是自己在控制着自己的大脑，是自己在想着这样那样复杂的事情，是自己想要得到这样那样的东西。但其实并不是。是思维在控制着我们。对于思维简单的人而言，他的思维只会让他追寻吃饱喝足。对于思维普通的人，他的思维会催使他追寻钱，权，性等世俗意义上的成功。而对于思维高深的人，他的思维已经无法满足于此了。他需要追寻自身和这个世界存在的意义。然而很可惜，并没有这么个玩意儿。任何事物从出生，到毁灭，都没有任何的意义。基因控制着思维，思维控制着我们，如是而已。但是，即使他们的头脑非常明白这一点，他们依旧无法停下来。这就像饿了要吃饭，渴了要喝水一样，只要自己的思维还存在，就需要追寻那些该死的东西。所以他们需要去冒险，去寻找刺激，去创造，去毁灭，去伤害他人，去麻痹自己。一边满不在乎的干着各种残忍的事，一边饱受着良心的谴责，然后继续干着同样的事。他们不得不想方设法满足自己思维的饕餮。即便那饕餮将伤害他人，也将吞噬自己。越想要证明自己的强大，就越无法忍受自己的脆弱。拥有再多的东西，也无法填补自己内心的黑洞。很多时候，太过聪明并不是一个好事。当一只狗产生了超越狗的思维时，他就注定无法当一条好狗了。</p></li><li><p>再谈谈现在的项目，之前有说过我认为的项目上的几大坑，再补充两条。</p><ol><li>在开发上，几个人用一个分支进行开发，就没有分支管理这一说，导致代码混乱问题。提交混乱，提交不是按功能提交而是随便提，我看了就挺难受的，我就感受到这是一个根本不重视代码质量的一个团队，可能是我出淤泥而不染？不至于，我觉得我应该只是基本的素养吧。当然也没有 CodeReview，有一天我都叫他们来看一下我的代码（那会并不忙），但是被我哪看的懂啊一句话应付过去了。</li><li>我也兼职这个项目的运维工作，当前之前说的老打扰我的事情，就有很多是有关运维的问题。运维刚开始还是比较清晰的。当项目中后期的时候，本项目需要对接很多的其他系统，对接的时候可能就需要再部署一套新的环境来进行调试等操作。运维就是手动运维。我操作过的内容，我会记一个表格。但是其他人可能也部署了东西，但不更新文档。只是口头知会我一声，慢慢的我也有的内容就不清楚了。我烦的不是部署了杂七杂八的内容，而是没有一个运维的规范。这是一个由于规则缺少导致的混乱局面。</li></ol></li><li><p>最近还看了一本开源的书叫《凤凰架构》，里面描述的场景让人十分的心潮澎湃：有种把握住了行业发展脉动的奇妙感觉。</p><p>​        原始分布式时代-&gt;单体系统时代-&gt;SOA时代-&gt;微服务时代-&gt;云原生时代-&gt;无服务时代 </p></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 工作 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>二进制的应用与亮剑</title>
+      <link href="/record/2021/07/22/ssn0009/"/>
+      <url>/record/2021/07/22/ssn0009/</url>
+      
+        <content type="html"><![CDATA[<p>​        最近看到我一个程序设计中对二进制数一个有意思的应用。他的场景是一个多选框有五个多选项，怎么简洁的表示每次这个多选框勾了哪几个选项呢？</p><p>​        他们构造了一个八位二进制数，分别对应五个选项和三个预留位置。当选项勾选的时候其所对应的二进制位为1，未勾选和预留位默认为0，然后用这个二进制数转化为十六进制，即用两位数就可以表示这个多选框的勾选情况。</p><hr><p>​        最近随意看了几集亮剑，看到一个配角感概颇多。剧情大概是：山本的特种部队抓秀芹之前先抓了一个团里的保卫科干事朱子明严刑拷打搜集情报。朱子明在刚开始被严刑逼问没有松口，只求一死，但是比死更痛苦的是求死不能，在山本介绍完凌迟的刑罚后，朱子明的心态崩溃，交代了情报，当了叛徒。之后看着山本杀了赵家峪的乡亲，心里又一次的崩溃，过了两天又走出阴影彻底心死做了叛徒。</p><p>​        并没有”样板戏”里那样的宁死不屈。我觉得这才是亮剑拍出精彩的地方。拍出一个普通人被俘虏到变成叛徒的一个残酷现实。如果没有被俘虏，我相信他肯定是一个不怕牺牲不畏艰难的优秀八路军战士，就凭刚被俘虏被严刑拷打闭口不言的姿态已经超越了大部分人。不是所有八路军都是刘胡兰，看到朱子明残酷的一生，我就觉得他其实不应该被大声批评，真正应该骂应该是像楚云飞准备叛变的一二营长那样的，为了自己利益而当叛徒的人。而朱子明只是一个悲剧罢了。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>记一次数据库操作事故</title>
+      <link href="/record/2021/07/19/%E5%88%A0%E5%BA%93%E7%9A%84%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/"/>
+      <url>/record/2021/07/19/%E5%88%A0%E5%BA%93%E7%9A%84%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/</url>
+      
+        <content type="html"><![CDATA[<ol><li><p>事件描述:</p><p>同事意外删除了测试环境的一张核心表，导致测试环境访问异常。我之前做了数据库的每日备份，我拿出备份的数据文件准备找出被删除的表结构及数据，但是备份文件有二三十兆，打开半天全局搜索到一般就卡住了，断断续续整了半个小时，我决定把原来的库清空，再把备份文件全部导入。很顺利。但是过了一阵别人告诉我数据少了。我去检查的时候定睛一看，我发现备份所在目录挂载的磁盘已经满了，备份在一周之前就停下了。很尴尬我拿一周前的备份恢复了现在的数据。幸好，这个数据库本周内新增的数据只有部分的数据字典项，最后手动把数据给补上了….</p></li><li><p>总结:</p><p>做事最怕做一半，因为做一半最容易出事情。不管是什么环境，数据库备份肯定是必须的，但是我忽略了数据库内容的大小，几个数据库每日备份的文件大小都有几百兆，在做数据库备份的时候都应该想到定时清理。</p><p>定时清理的shell脚本也很简单：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">find /xx -mtime +2 -name &quot;*.sql&quot;  -exec -rm -rf &#123;&#125; \;</span><br><span class="line"># /xx 指需要清理目录的路径</span><br><span class="line"># +2 指清理两天前的数据</span><br><span class="line"># “*.sql” 指需要清理的文件格式</span><br></pre></td></tr></table></figure></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 工作 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>谈谈Java中的位运算</title>
+      <link href="/record/2021/07/04/%E8%B0%88%E8%B0%88Java%E4%B8%AD%E7%9A%84%E4%BD%8D%E8%BF%90%E7%AE%97/"/>
+      <url>/record/2021/07/04/%E8%B0%88%E8%B0%88Java%E4%B8%AD%E7%9A%84%E4%BD%8D%E8%BF%90%E7%AE%97/</url>
+      
+        <content type="html"><![CDATA[<ol><li><p>我们为什么要了解使用位运算？</p><ol><li>某些场景下使用位运算比普通计算使计算机运算效率更高，更节约内存。</li><li>位运算某些场景比普通方法写出来会更简洁。</li><li>看很多比较底层的实现源码时，很多已经用了位运算，所以为了更好的了解底层实现，需要懂这相关的知识。</li></ol></li><li><p>有关位运算的基本概念。</p><ol><li><p>原码，反码，补码的概念及其意义。</p><p>二进制机器码即可认为是原码，原码的首位是正负位。</p><p>正数的反码与补码是其本身，负数的反码是在其原码的基础上, 符号位不变，其余各个位取反，负数的补码是在其反码上加1。</p><p>反码与补码的意义是为了尽量简单的解决计算机做减法的问题。</p></li><li><p>位运算的六个运算符号。</p><ul><li><p>&amp; 与运算 两个位都是 1 时，结果才为 1，否则为 0</p></li><li><p>|  或运算 两个位都是 0 时，结果才为 0，否则为 1</p></li><li><p>~  异或运算，两个位相同则为 0，不同则为 1</p></li><li><p>^  取反运算，0 则变为 1，1 则变为 0</p></li><li><p>&gt;&gt; 右移运算，向右进行移位操作，对无符号数，高位补 0，对于有符号数，高位补符号位</p></li><li><p>&lt;&lt;  左移运算，向左进行移位操作，高位丢弃，低位补 0</p></li><li><p>&gt;&gt;&gt; 无符号右移运算，若该数为正，则高位补0，而若该数为负数，则右移后高位同样补0</p></li></ul></li></ol></li><li><p>常用示例</p></li></ol><ul><li><p>位操作实现乘除法</p><p>数 a 向右移一位，相当于将 a 除以 2；数 a 向左移一位，相当于将 a 乘以 2</p></li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int a = 2;</span><br><span class="line">a &gt;&gt; 1; ---&gt; 1</span><br><span class="line">a &lt;&lt; 1; ---&gt; 4</span><br></pre></td></tr></table></figure><ul><li><p>位操作交货两数</p><p>位操作交换两数可以不需要第三个临时变量，虽然普通操作也可以做到，但是没有其效率高</p></li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">//普通操作</span><br><span class="line">void swap(int &amp;a, int &amp;b) &#123;</span><br><span class="line">  a = a + b;</span><br><span class="line">  b = a - b;</span><br><span class="line">  a = a - b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//位与操作</span><br><span class="line">void swap(int &amp;a, int &amp;b) &#123;</span><br><span class="line">  a ^= b;</span><br><span class="line">  b ^= a;</span><br><span class="line">  a ^= b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>​    位与操作解释：第一步：a ^= b —&gt; a = (a^b); </p><p>​    第二步：b ^= a —&gt; b = b^(a^b) —&gt; b = (b^b)^a = a</p><p>​    第三步：a ^= b —&gt; a = (a^b)^a = (a^a)^b = b</p><ul><li><p>位操作判断奇偶数</p><p>只要根据数的最后一位是 0 还是 1 来决定即可，为 0 就是偶数，为 1 就是奇数。</p></li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if(0 == (a &amp; 1)) &#123;</span><br><span class="line"> //偶数</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><ul><li><p>位操作交换符号</p><p>交换符号将正数变成负数，负数变成正数</p></li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int reversal(int a) &#123;</span><br><span class="line">  return ~a + 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>​    整数取反加1，正好变成其对应的负数(补码表示)；负数取反加一，则变为其原码，即正数</p><ul><li><p>位操作求绝对值</p><p>整数的绝对值是其本身，负数的绝对值正好可以对其进行取反加一求得，即我们首先判断其符号位（整数右移 31 位得到 0，负数右移 31 位得到 -1,即 0xffffffff），然后根据符号进行相应的操作</p></li></ul><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">abs</span><span class="params">(<span class="keyword">int</span> a)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i = a &gt;&gt; <span class="number">31</span>;</span><br><span class="line">  <span class="keyword">return</span> i == <span class="number">0</span> ? a : (~a + <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>​    上面的操作可以进行优化，可以将 i == 0 的条件判断语句去掉。我们都知道符号位 i 只有两种情况，即 i = 0 为正，i = -1 为负。对于任    何数与 0 异或都会保持不变，与 -1 即 0xffffffff 进行异或就相当于对此数进行取反,因此可以将上面三目元算符转换为((a^i)-i)，即整数时     a 与 0 异或得到本身，再减去 0，负数时与 0xffffffff 异或将 a 进行取反，然后在加上 1，即减去 i(i =-1)</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">abs2</span><span class="params">(<span class="keyword">int</span> a)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i = a &gt;&gt; <span class="number">31</span>;</span><br><span class="line">  <span class="keyword">return</span> ((a^i) - i);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 基础知识 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈(10)期</title>
+      <link href="/record/2021/07/03/%E6%9D%82%E8%B0%88(10)%E6%9C%9F/"/>
+      <url>/record/2021/07/03/%E6%9D%82%E8%B0%88(10)%E6%9C%9F/</url>
+      
+        <content type="html"><![CDATA[<p>杂谈：</p><ul><li><p>最近认知上的升级比较频繁，突然发现我的技术生涯前路漫漫，而我还在刚开始的路上徘徊。我为自己准备了一个书单，希望自己能在今后两年内先囫囵吞枣的通读一遍。</p><ul><li>计算机组成原理，编译原理，计算机网络，Engineering a Compiler，深入理解计算机系统，现代操作系统，TCP/IP详解 卷1：协议，图解TCP/IP，HTTP权威指南</li><li>算法图解，Java 核心技术：卷1，Effective Java，Java并发编程实战，Java性能权威指南，深入理解Java虚拟机，Java编程思想，大话设计模式，SpringBoot实战</li><li>重构，修改代码的艺术，Google软件测试之道，代码大全，完美软件，代码整洁之道，程序员的职业素养</li><li>UNIX编程艺术，UNIX网络编程，Linux C编程一站式学习，高性能Mysql，MySQL技术内幕，数据库索引设计及优化，MySQL必知必会，NoSQL精粹，HBase权威指南，HBase实战，微服务设计，k8s中文指南</li><li>effective go，C程序设计语言，C语言程序设计现代方法，C陷阱与缺陷</li></ul></li></ul><p>一共四十一本，有的读过，重读一遍也未尝不可，读完一本书可以写一些读后的内容。当然需要时刻谨记并不是为了读书而读，看这些东西是一种深入了解计算机的方法，而不是结果。</p><ul><li><p>说起书，豆瓣一直是一个书籍评价比较综合的网站，其他类型的书也感觉不错，这是<a href="https://book.douban.com/annual/2020">2020年的年度榜单</a>。</p></li><li><p>NAS是一种比较流行的本地的网络附属存储设备，类似的说就是在本地搭了一个阿里云盘仅供一人/一家使用，这是一篇它的<a href="https://post.smzdm.com/p/a4wmxw98/">科普介绍</a>。</p></li><li><p>发现一个奇怪的现象：当我越忙的时候，我越能抠出时间做提升自己的事情，当我周末两天有大把时间的时候我却总是虚度光阴。</p></li><li><p>晚上适合做总结，写东西，思绪纷飞又勿需集中精力，早上适合攻克难题，我想说的是要在适合的时间做适合的事情。</p></li></ul><p>​    </p><p>言论：</p><ul><li><p>Great minds discuss ideas（伟人谈论想法）</p><p>Average minds discuss events（普通人谈论事件）</p><p>Small minds discuss people（庸人谈论他人）</p><p>​                                                                                                                                                                                      – Eleanor Roosevelt</p></li><li><p>世界观代表你是怎么看这个世界的，是左还是右，是激进还是保守，是理想还是现实，是乐观还是悲观。人生观代表你想成为什么样的人，是成为有钱人，还是成为人生的体验者，是成为老师，还是成为行业专家，是成为有思想的人，还是成为有创造力的人。价值观则代表你觉得什么对你来说更重要，是名是利，是过程还是结果，是付出还是索取，是国家还是自己，是家庭还是职业。</p><p>​                                                                                                                                                                                     –陈皓</p></li><li><p>一边工作一边听音乐是没有办法真正思考的，或许他们并不认为自己的工作需要任何的思考                     – 斐德洛</p></li><li><p>如果你对事情有完全的信心，就不太可能产生狂热的态度。就拿太阳来说吧，没有人会为了它明天会升起而兴奋不已，因为这是必然的现象。如果有人对政治或是宗教狂热，那是因为他对这些目标或是教义没有完全的信心                         – 斐德洛</p></li><li><p>他认为像学校、教会、政府和政治组织这种机构，都是想用某种特定的目标而非真理来引导别人的思考，以使他们的机构能够继续存活下去，以控制别人来继续为这些机构服务。                                                                                                     – 斐德洛</p><p>​                                                    </p></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>回顾一下最近的工作</title>
+      <link href="/record/2021/07/02/%E5%9B%9E%E9%A1%BE%E4%B8%80%E4%B8%8B%E6%9C%80%E8%BF%91%E7%9A%84%E5%B7%A5%E4%BD%9C/"/>
+      <url>/record/2021/07/02/%E5%9B%9E%E9%A1%BE%E4%B8%80%E4%B8%8B%E6%9C%80%E8%BF%91%E7%9A%84%E5%B7%A5%E4%BD%9C/</url>
+      
+        <content type="html"><![CDATA[<p>回顾一下这两个月的工作情况，我做了什么，遇到了什么问题，等等，大概做一个复盘吧。</p><p>第一个想法：两个月说长也不长，但是我根本想不起来五月初的我具体在做什么，只记得五月搬了个家。幸好有周报这个东西，他还是有意义的，之前一直是把他作为形式上的东西。</p><p>五月上旬到六月下旬我主要是在开发目前系统的通用功能，当前的系统是一个套壳的流程平台：流程引擎是已经现成的。但是目前来说这个项目还是很复杂，这是由于我们目前的情况是客户原来有一个流程平台，大概是2010年开始使用的，到目前超过十年了。用了这么多年的一个系统想要更新换代，这就挺麻烦的，主要麻烦有三个：</p><p>​    第一，多年的旧系统的使用已经让用户形成了使用习惯，客户要求的新系统无时无刻体现着旧系统的影子，旧系统上不管是合理的还是不合理的东西可能就会一股脑的在提需求的时候往新系统上搬，当前我们可以挡掉一部分，但是还是有很多一部分的东西以习惯为由还是需要新系统继续实现，当然这个完全是正常的，客户能依照的参照物只有旧的系统，当前新的系统也需要完全包含旧系统的功能，并在此基础上扩展一些新的特性。</p><p>​    第二，数据迁移的问题，这十年的旧系统运行下来流程业务方面的数据肯定是不能丢的。当前太久远的数据，比如说三年前的数据需要入到数据湖里去，但是三年内的数据还需要迁移到新系统，达到可查到环节的要求。先细说一下，数据迁移。旧系统使用的数据库是<code>Oracle</code>，而新系统使用的是<code>Mysql</code>，并且旧系统的表多且分散（大概四百张），且命名比较随意，很多表的表名基本上就是多前缀+数字，比如说<code>AA_BB_CC024</code>,面对这种数据库，我们首先需要他们问清楚旧系统数据库设计的文档，一边设计新的数据库表，一边还要考虑到设计的新表字段和原数据库表字段的对应关系，还要考虑设计新表时要给现在不用但原数据库有的字段留位置…这样一点一点的全部的弄清楚了，才用Kettle进行数据的迁移。在说一下数据入湖，入湖相对于迁移来说是简单的很多了，我是第一次接触入湖，但我觉得他们这种入湖的方式有些低级？（个人感觉）。他们的入湖的方式大致是这样的：我们首先要安装要求的格式输出由多个数据文件组合成的数据包，每个表的内容就是一个数据文件，在生成一些配置文件的东西，也放到包里，然后就要把数据包放到指定服务器的目录，最后，数据湖人员把包取走，做他们具体的操作。这一套下来有些像民国特务接头的感觉，一旦接受了这个设定….</p><p>​    第三，文档缺失，旧的系统并不是独立的一个系统，它还要跟六个其他系统进行交互，由于各种原因，与旧系统对接的文档，有的内容缺失，有的文档没有更新，版本过老，在这十年中，跟旧系统的对接的接口很多都改过，旧系统中的流程也被各种扩展与修改，然而文档的更新却跟不上，我们浪费了很多时间去找文档，找人确认这些东西，对于我来说，这算是比较痛苦的一件事。</p><p>话说回来，我这两个月主要还是做一些通用的功能，由于当前的流程引擎不能完全满足客户的需求，尤其是部分从老系统传承过来的功能，我主要就是做这个事情，满足这些对不齐的部分。其次就是负责整个项目的运维，这段运维就是基础的运维，我自己为了方便也写了一些<code>shell</code>脚本，但是这只是杯水车薪的工作，没有体验过<code>devops</code>的我现在极度想要运维自动化…还有就是做数据迁移及入湖的工作，写新的文档，还有各种杂七杂八为了让流程满足要求运行下去的脚本…这些事繁复且杂乱，也比较烦这类事情。</p><p>说是复盘，其实算吐槽了，我不知道项目都是这样，还是我的经历比较奇特，我的项目经理不错，说实话大部分的沟通确认是他在承担，当然这是他的工作职责，也许我应该想想我怎么能让这个项目完成的更顺利一点。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 工作 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>读陈浩时间管理</title>
+      <link href="/record/2021/06/29/%E8%AF%BB%E9%99%88%E6%B5%A9%E6%97%B6%E9%97%B4%E7%AE%A1%E7%90%86/"/>
+      <url>/record/2021/06/29/%E8%AF%BB%E9%99%88%E6%B5%A9%E6%97%B6%E9%97%B4%E7%AE%A1%E7%90%86/</url>
+      
+        <content type="html"><![CDATA[<p>最近在极客时间上看到陈浩的专栏，他工作与学习的理念与方法深深冲击了我。金玉良言，勿需修改，摘抄即可：</p><p>关于如何拒绝需求：</p><blockquote><p>​    当你面对做不到的需求时，你不要说这个需求做不到。尤其是，你不要马上说做不到，你要先想一下，这样让别人觉得你是想做的，但是，在认真思考过后，你觉得做不到，并且给出一个你觉得能做到的方案。</p><p>​    这里的诀窍是：给出另一个你可以做到的方案，而不是把对方的方案直接回绝掉。当你面对过于复杂的需求时，你不要说不。你要反问一下，为什么要这样做？这样做的目的是什么？当了解完目的以后，你可以给出一个自己的方案，或是和对方讨论一个性价比更好的方案。你可以回复说，这个需求好复杂，我们能不能先干这个，再做那个，这样会更经济一些。这里的诀窍是：我不说我不能完全满足你，但我说我可以部分满足你。当你面对时间完全不够的需求时，你也不要说不。既然对方把压力给你，你要想办法把这个压力还回去，或是让对方来和你一同分担这个压力。</p><p>​    这个时候，我惯用的方式是给回三个选择：</p><p>a. 我可以加班加点完成，但是我不保证好的质量，有 bug 你得认，而且事后你要给我 1 个月的时间还债。</p><p>b. 我可以加班加点，还能保证质量，但我没办法完成这么多需求，能不能减少一些？</p><p>c. 我可以保质保量地完成所有的需求，但是，能不能多给我 2 周时间？</p><p>​    这里的诀窍是：我不能说不，但是我要有条件地说是。而且，我要把你给我的压力再反过来还给你，看似我给了需求方选择，实际上，我掌握了主动。这就是学会说“不”的方法。说白了，你要学会在“积极主动的态度下对于不合理的事讨价还价”。只有学会了说“不”，你才能够控制好你的时间。</p></blockquote><p>关于开会：</p><blockquote><p>​    开会，不是讨论问题，而是讨论方案，开会不是要有议题，而是要有议案。所以，作为与会者，如果你发现没有议案，大家海了去说，那么你有两种选择，跳出来帮大家理一理，或者也可以说一下，如果会上讨论不清，要不先线下讨论，有了方案再来评审。也许在一些会上你不敢这么干，但是有些会你是可以这么干的。能影响的这些都能为你争取到很多时间。</p></blockquote><p>关于时间管理：</p><blockquote><p>投资自己的时间</p><p>其实，时间就像金钱一样，你得学会投资时间，把时间投资在有价值有意义的地方，你就会有“更多的时间”。</p><ul><li>花时间学习基础知识，花时间读文档。在参加工作的这 20 年时间里，我发现，很多程序员都把时间都浪费在了查错上。究其根本原因就是基础知识不完整，没有好好地把技术相关的用户文档读完就仓促上手做事情了。其实只要把基础打扎实，认真读一下文档，你会省出很多很多的时间。系统地学习一门技术是非常关键的，所以这个时间是值得投资的。</li><li>花时间在解放自己生产力的事上。在自动化、可配置、可重用、可扩展上要多花时间。对于软件开发来说，能自动化的事，就算多花点时间也要自动化，因为下次就不用花时间了。让自己的软件模块可以更灵活地配置和扩展，这样如果有需求变更或是有新需求的时候，可以不用改代码，或者就算要改代码也很容易。这里，可能很多人会说不要过度设计，对于这个观点，我既同意，也反对。的确，过度设计不好，但是只要是能在未来节省时间的，宁可这个项目延期，我也会做的。花时间在解放自己的事上是最有意义的了。</li><li>花时间在让自己成长的事上。注意，晋升并不代表成长，成长不应该只看在一个公司内，而是要看在行业内，在行业内的成长才是真正的成长。所以，把时间花在能让自己成长，能让自己有更强的竞争力，能让自己有更大的视野，能让自己有更多可能性的事情上。这样的时间投资才是有价值的。</li><li>花时间在建立高效的环境上。我相信你和我会有一样的一个习惯，那就“工欲善其事，必先利其器”。我们程序员在做事之前都喜欢把自己的工作环境整理到自己喜欢的状态下。比如使用趁手的开发工具，使用趁手的设备。这里， 我想把这个事扩大一下，花些时间在影响你身边的人上，比如你的同事，你的产品经理，你的老板，去影响他们，让他们理解你，让他们配合你来建立更好的流程和管理方法。在这个方向上花时间也是很值得的。</li></ul><p>规划自己的时间</p><ul><li>定义好优先级。无论你写不写出来，你一定都会有一个自己的 to-do list。有 to-do list 并不是什么高深的事。更重要的是，你要知道什么事是重要的，什么事是紧急的，什么事重要但不紧急，什么事又重要又紧急。这有利于你划分优先级。</li><li>最短作业优先。对于相同优先级的事，我个人喜欢的是“最短作业优先”的调度算法。理由是，先把可以快速做完的事做完，看到 to-do list 上划掉一个任务，看到任何的数据在减少，对于自己也好，对于老板也好。老板可以看到你的工作进度飞快，一方面有利于为后面复杂的工作争取更多的时间（老板只有在你有 Deliver 的时候才愿意给你更多的时间），另一方面，看到任务列表的减少会让你的心态更为积极。而反过来，你花太多的时间在长作业上，长作业通常很容易出现“意外情况”让你花更多的时间，但此时你发现还有很多别的事没有做，这会让你产生焦虑感，产生更多的压力，进而导致更慢的生产效率。</li><li>想清楚再做。我发现很多时候，我们没有想清楚就开干了，边干边想，这样的工作方式其实很糟糕。你会发现，如果你没有想清楚，你总是要对已完成的工作进行返工，返工好几次，其实是非常浪费时间的。所以，对于一些没想清楚的事，或是自己不太有信心的事，还是先看看有没有已有的成熟解决方案，或是找更牛的人来给你把把关，帮你出出主意，看看有没有更好、更简单的方式。</li><li>关注长期利益规划。要多关注长远可以节省多少时间，而不是当前会花费多少时间。长期成本会比短期成本大得多。所以，宁可在短期延期，也不要透支未来。这里的逻辑是，工作上的事你永远也做不完的，长痛不如短痛。我一年要做 10 个项目，我宁可第 1 或第 2 个项目被老板骂，但是我可以赢得后面 8 个项目，从后面 8 个项目上把之前失去的找回来。而如果反过来的话，我虽然一开始得到了老板的信任，但是后面越来越玩不动，最终搬起一块大石头砸了自己的脚。而且，不关注长远利益的人，基本上来说也是很难有成长的。也就是说，你要学会规划自己的行动计划，不是短期的，而是一个中长期的。我个人建议是按季度来规划，这个季度做什么，达到什么目标，一年往前走四步，而不是只考虑眼下。</li></ul><p>用好自己的时间</p><ul><li>如何将这些时间管理方法形成习惯，因为我坚信：“做”比“做好”更重要。养成一个好习惯通常需要 30 天左右的时间，尤其在最初的几天就更为重要了。这时，不妨将文章中提到的方法和几个要点，写在某本书或者笔记本的扉页上，方便查看，时刻提醒自己。</li><li>形成正反馈。在前面的文章中，我提到过，要有正反馈，也就是成就感，有助于完成一些看似难以完成的事儿。比如，我们说过，学习是逆人性的事儿，但如果在学习过程中不断地有正反馈，就更利于我们坚持下去。要让自己有正反馈，那就需要把时间花在有价值的地方，比如，解决自己和他人的痛点，这样你会收获别人的赞扬和鼓励。反思和举一反三。可以尝试每周末花上点时间思考一下，本周做了哪些事儿？时间安排是否合理？还有哪些可以优化提高的地方？有点儿类似于我们常说的“复盘”。然后思考一下，下周的主要任务是什么？并根据优先级规划一下完成这些任务的顺序，也就是做一些下周的工作规划。这样每周都能及时得到自己做时间管理之后的反馈，并有助于持续优化。通常坚持做时间管理一段时间以后，你都能在每次复盘时得到正反馈，这是有利于我们形成时间管理习惯的。但我这里也想强调一点，我们也要允许偶尔的“负反馈”，因为人的状态总是会有高潮和低谷的，控制好一个合理的度就可以了。</li></ul></blockquote>]]></content>
+      
+      
+      <categories>
+          
+          <category> 生活 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 读书 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈(09)期</title>
+      <link href="/record/2021/06/24/%E6%9D%82%E8%B0%88(09)%E6%9C%9F/"/>
+      <url>/record/2021/06/24/%E6%9D%82%E8%B0%88(09)%E6%9C%9F/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>杂谈</p><ul><li>最近有在想极简生活，在莫名其妙背负很多东西的时代，我觉得这是一种不错的生活方式，可以通过尽可能抛去身边非必须物品的方式来让自己有一个更好的生活状态。当然极简只是相对的极简，我看到践行极简的人做到了令我难以想象的地步，当然，看个人，我不理解，但他们可能甘之如饴。我对自己的物质上和精神关注上把我的所有东西分了个类，陈列展示了一下，发现我本身物质生活好像就挺朴素的，但是脑子里的东西比较混杂，这个需要大大滴扔垃圾。</li><li>接着上一条，我在梳理自己的时候总是很痛苦，粗略的审视自己感觉不错，但得出的结论总是比较简单与单调，彷佛是老生常谈一般。但是向抓住一个方向深挖一下自己干了什么，怎么做的，大脑就会时不时罢工，就像挖矿遇到了石头，稍微前进一会就感觉自己很累需要休息一下，大脑发出休息的指令是如此的自然，然后我自然而然的去找一些简单的快乐放松去了。我感觉这就是大脑好久不用生锈的感觉吧。</li><li>我前几周经常萌生要组装一台台式电脑的想法。像自己买CPU，主板，电源…但是被最近的显卡价格吓回去了。然后接着上一条，我在想，我的脑子就是CPU加GPU，身体就是主板和电源。当然人体的CPU&amp;GPU是能不断升级/降级的。想象大街上走着各种各样的型号的电脑，we`re all robot tonight，感觉很有意思。</li><li>这几天把我的旧笔记本闲鱼出掉了，这是16年的时候大一买的电脑，联想ideapad，那时候联想还是地地道道的美帝良心想，电脑感觉就一般，内存4G,500G机械盘，还好也没啥要求，主要是不怎么学习不咋用电脑，然后凑活凑活用了四年，大修过一次，加了内存条，白色电脑也用成了黄色…对旧物还是有微微不舍。</li><li>最近又搭了<code>hexo</code>的博客，安排在<code>GitHub Pages</code>上了，又把再原来服务器上的博客基本上都迁移过来了，总共花了差不多一天时间。之前心情澎湃自己就用<code>springboot+vue</code>实现了一个博客，又花了100多大洋租了最便宜的服务器，买了域名，还捣鼓着<code>https</code>。这样投入的经历太多了，我只是需要一个记录的地方。当然心里有些小布尔乔亚，感觉稍微还要秀一下，但又不要人尽皆知…人的心思真的奇怪。话扯回来，高成本的搭建博客对我来说就是一年的事情，不能持久。记事本又差点意思，还是老老实实挂在<code>GitHub</code>上….</li></ul></li><li><p>技术</p><ul><li><p>最近在做数据入湖的事情。我要做的就是把数据库大部分表的数据全部遍历出来，生成特殊格式的文件。这个可以用shell脚本完成（不会），也可以写Java的定时任务。所以我遇到了两个问题：</p><ul><li><code>myBatis</code>怎么对数据库做操作？</li><li>怎么在不写实体类的情况下用<code>myBatis</code>获取单表中的所有数据？</li><li>数据入湖分为全量入湖与增量入湖，第二种入湖时怎么区分哪些是增量数据，进行统计呢？</li><li>由于库里表多，表里数据也不少。怎么能对这个程序做优化呢？</li></ul><p>我的一些答案：</p><ul><li><p><code>select table_name from information_schema.tables where TABLE_SCHEMA=(select database())</code></p><p>查询某数据库内所有表的表名</p></li><li><p>Mapper中接收类型设置成<code>List&lt;LinkedHashMap&lt;String,String&gt;&gt;</code>，直接可以以数据表拿到单表所有数据(<code>LinkedHashMap</code>就是保证拿到的数据与数据库表中的数据顺序是一样的)</p></li><li><p>增量入湖的思路肯定是以时间为划分，比如说今天12：00全量入湖一次，下一次增量入湖表里筛数据判断旧肯定是sql判断时间为今日12：00以后的，但是有的表并没有时间字段，由于我目前项目的数基本都是只增加不减少的，所以，我感觉可以统计第一次入湖的表的行数，第二次增量时就拿第一次的行数之后的数据（这个感觉有些不靠谱）。</p></li><li><p>…….</p></li></ul></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（08期）</title>
+      <link href="/record/2021/06/18/%E6%9D%82%E8%B0%88(08%E6%9C%9F)/"/>
+      <url>/record/2021/06/18/%E6%9D%82%E8%B0%88(08%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ol><li><p>杂谈</p><ul><li><p>发现现在好多app都在做扩展，扩展的内容觉得并不好。<br>以前支付宝蚂蚁森林我就种树，慢慢蚂蚁森林链接出了养鸡，养鸡链接出了种果树，果树链接出了农场种地。好嘞，我现在不玩蚂蚁森林了行不行。<br>淘宝+奇迹暖暖=淘宝人生<br>淘宝+开心农场=芭芭农场<br>淘宝+快手抖音=淘宝逛逛<br>是不是程序员招多了没得干了？淘宝就是举个例子，其他app半斤八两。</p><p>还有提名一下知乎，网易云音乐，尤其是知乎。</p></li><li><p>在v站看到一个人生只有九百月的帖子。看到了一个<a href="https://fgz.cn/life.html">生命日历</a>，我已经过了267个月了，大概已经走了三分之一的路程，一直以为自己还年轻，其实已经不然了。</p><p><img src="https://i.loli.net/2021/06/16/uMRfwP4oHCdIGzh.png" alt="image-20210616225406477"></p></li><li><p>最近用了一次百度网盘下载东西。从百度网盘的下载速度上就能看出百度的紧张态度，目前百度网盘又恢复到了之前的速度水平，由此可见百度网盘对于阿里云盘的入场好像没那么警惕。</p></li><li><p>最近一直想买东西，不知道为什么就是想消费，想买sony xm4，想买mac mini，还想自己组装一个台式，真的很奇怪，扪心自问一下，我对这些东西的确没有刚需，为什么不断的冒出想买他们的念头呢，x想了其中原因之一是我今年对数码产品的关注变多了。怎么才能避免内心被消费主义撩动呢？</p></li><li><p>最近去爬了趟陕西。西安比北京热，目前的温度感觉就是北京之前最热的时候，出去玩一天，身上黏糊糊的，遭不住遭不住。华山不错！</p><p><img src="https://i.loli.net/2021/06/16/hzP5bCmM6GuBkct.jpg" alt="微信图片_20210616230321"><img src="https://i.loli.net/2021/06/16/wOK2y6LIvRmu5z1.jpg" alt="微信图片_20210616230233"></p></li></ul></li><li><p>看到一个大神，叫<code>Richard Hipp</code>,是SQLite作者，他的风格就是开发的作品都是一个c文件。最近一个C语言文件实现了一个web服务器。膜拜！</p></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>锚点</title>
+      <link href="/record/2021/06/15/ssn0008/"/>
+      <url>/record/2021/06/15/ssn0008/</url>
+      
+        <content type="html"><![CDATA[<p>​        在坐地铁的时候突然冒出一个想法。我是不是该给自己打一个锚点了。这个锚点是什么呢，是发生在自己身上大脑记忆最清楚的一件事。是过很久都磨灭不了的记忆。今天坐四号线的时候，车站音乐响起来，我突然就想起我实习的时候每天坐四号线十几站上班的日子。我的脑子是会偷懒的，他只尽量记下比较深刻的东西，然而日常生活是不够深刻的。<br>​        大脑用Map把时间当做key，把某段时间内深刻的事作为锚点做为value，人生就是一个Map集合。当我回顾自己过去的二十年时，我并不会记得每一个日常，曾经的每天，我只是记得我小学碰到地震，在操场上课了好久，初中中学快倒闭，借宿在别的学校的一段日子…等等，这一段一段的记忆拼成的我的一生，莫名觉得有点可悲啊，但想不到悲从何起。<br>      经常回顾从前是一种老了的表现。我以前总是对喜欢说自己过往的人是嗤之以鼻的。但是我这种不想的其实更不好。经常回顾能够加深记忆。像我这样的人可能到五十岁只能保存二十岁以后的记忆。再之前的东西真真正正的消失掉了，记忆这种东西忘记了该怎么能找回来呢？<br>      今晚，火车上，我想好好想想我的一辈子。<br>      刚刚回想了十分钟，我想起我小时候干的事情我想打死我自己，感谢妈妈。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>静态代理的简单理解</title>
+      <link href="/record/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/"/>
+      <url>/record/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/</url>
+      
+        <content type="html"><![CDATA[<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">//静态代理的一个简易理解实现，场景是dianedii结婚找了加婚庆公司...</span><br><span class="line"></span><br><span class="line">//“婚庆公司”协助“我”实现“结婚”动作</span><br><span class="line">public class StaticProxy &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        MarryCompany marryCompany = new MarryCompany(new Person(&quot;你&quot;));</span><br><span class="line">        marryCompany.HappyMarry();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚主角</span><br><span class="line">class Person implements Marry</span><br><span class="line">&#123;</span><br><span class="line">    public String name;</span><br><span class="line"></span><br><span class="line">    public Person(String name) &#123;</span><br><span class="line">        this.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        System.out.println(name+&quot;要结婚啦!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚动作</span><br><span class="line">interface Marry&#123;</span><br><span class="line">    public void HappyMarry();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//婚庆公司</span><br><span class="line">class MarryCompany implements Marry&#123;</span><br><span class="line">    Marry target;</span><br><span class="line">    public void before()&#123;</span><br><span class="line">        System.out.println(&quot;结婚前筹措婚礼&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void after()&#123;</span><br><span class="line">        System.out.println(&quot;结婚后蜜月规划&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public MarryCompany(Marry target) &#123;</span><br><span class="line">        this.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        before();</span><br><span class="line">        this.target.HappyMarry();</span><br><span class="line">        after();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//输出：</span><br><span class="line">//结婚前筹措婚礼</span><br><span class="line">//你要结婚啦</span><br><span class="line">//结婚后蜜月规划</span><br><span class="line"></span><br><span class="line">//总结：</span><br><span class="line">//假如说Person类中是本来的实现，那么用静态代理的方式就可以在不修改之前代码的情况下，对其功能进行增强。</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 设计模式 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>周刊停更好久</title>
+      <link href="/record/2021/05/20/ssn0007/"/>
+      <url>/record/2021/05/20/ssn0007/</url>
+      
+        <content type="html"><![CDATA[<p>周刊停更一个月了。</p><p>我觉得还不错，其实之前写着写着有种翻垃圾的感觉，当然是信息垃圾。我看了好多文章，好像只有一篇我觉得还可以。其他的相对来说就是翻完扔掉的垃圾。我那会感觉自己是个过滤器。当然我看阮大也是写类似周刊坚持好多年了，一个是他的阅读面比较广，另一个是比较知名，github/weekly下每周都有很多人给他提issue，感觉跟我这种过滤不是一个层级。</p><p>还有就是我把自己限制住了，有一周我可能看到了好多有意思的句子，但是自己设置的周刊格式是比较均衡的，所以有时候有的时候周刊就写的比较痛苦，即有些模块并没有什么值得分享的还需要翻翻垃圾找一找，这种是经常遇到且有些痛苦的一个点。</p><p>第三个原因是我阅读量真的不高，充盈不起来这一个框子，虽说可以逼着自己多看点东西，但总是心理因素作祟，有些懒惰心理与自我怀疑的综合体。</p><p>hh，周刊停更一个月了，我觉得还不错。我更多的是在推上和备忘录里记录一些灵感，突然的想法。自愿做一个事情应该不是痛苦的，当然我的确是有类似周刊想要记录分享在互联网所观感的一个东西。但它不是周刊，应该是一个更自由形式的形式，也许是小文章，emmm，也是一个idea.</p><p>这是给自己的说明，为自己没坚持下去的辩解吧。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySQL数据定时备份</title>
+      <link href="/record/2021/05/19/MySQL%E6%95%B0%E6%8D%AE%E5%AE%9A%E6%97%B6%E5%A4%87%E4%BB%BD/"/>
+      <url>/record/2021/05/19/MySQL%E6%95%B0%E6%8D%AE%E5%AE%9A%E6%97%B6%E5%A4%87%E4%BB%BD/</url>
+      
+        <content type="html"><![CDATA[<p>在工作中经常需要接触数据库。为了保证数据安全与突发事件故障恢复，定时备份数据库的数据是十分有必要的。我们以<code>Linux</code>下的<code>Mysql</code>为例聊一聊怎么简单的备份数据。</p><h5 id="一、备份脚本准备"><a href="#一、备份脚本准备" class="headerlink" title="一、备份脚本准备"></a>一、备份脚本准备</h5><p><code>Mysql</code>中自带一个逻辑备份工具<code>mysqldump</code>.我们可以直接在命令行中对mysql数据进行操作。</p><p>以下是常见的命令格式：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mysqldump [选项] 数据库名 [表名] &gt; 脚本名</span><br><span class="line">---举个栗子---</span><br><span class="line">mysqldump -uroot test &gt; /home/backup.db</span><br><span class="line">---解释---</span><br><span class="line">通过用户root将test数据库进行备份到/home目录下的backup.db文件中</span><br></pre></td></tr></table></figure><p>同样的，将所有<code>mysql</code>所有数据库中数据备份即为：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump [选项] --all-databases [选项]  &gt; 脚本名</span><br></pre></td></tr></table></figure><p>将以上命令写在shell脚本中，并赋予可执行权限。执行以上脚本的时候，由于没有设置登录密码所以还需要手动设置密码，当然在<code>[选项]</code>中也可以增加密码属性，但是由于安全性考量不建议这样做。</p><p>我们采用将密码放在<code>my.cnf</code>中并且设置该配置文件无读权限（<code>chmod 600 my.cnf</code>）的方式来实现免密备份。</p><p>在<code>my.cnf</code>中增加如下配置：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[mysqldump]</span><br><span class="line">user=XXX</span><br><span class="line">password=XXX</span><br></pre></td></tr></table></figure><p>当然这里配置的用户要与脚本中的用户一致，并且在此处配置后，在脚本中不要添加<code>-p</code>的选项。</p><h5 id="二、启动定时任务"><a href="#二、启动定时任务" class="headerlink" title="二、启动定时任务"></a>二、启动定时任务</h5><p><code>linux</code>中有一个定时命令<code>crontab</code>,我们通常使用<code>crontab -e</code>来操作当前用户的定时任务。</p><p>执行以上命令后，在弹出的工作表中编辑脚本的定时规则。</p><p>其格式为：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">* * * * * backup.sh</span><br><span class="line">---解释---</span><br><span class="line">前五个 * 分别代表：</span><br><span class="line">分钟 （0-59） </span><br><span class="line">小時 （0-23） </span><br><span class="line">日期 （1-31） </span><br><span class="line">月份 （1-12） </span><br><span class="line">星期 （0-6）//0代表星期天 </span><br></pre></td></tr></table></figure><p>所以，这样就可以很自由的设置定时任务，比如说我定时一个凌晨两点备份数据库信息的任务：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">0 2 * * * /home/backup.sh</span><br><span class="line">---解释---</span><br><span class="line">0代表00分</span><br><span class="line">2代表02点</span><br><span class="line">其他没有设置，所以每次到凌晨两点是都会执行这个数据备份脚本。</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>最近一个月</title>
+      <link href="/record/2021/04/24/ssn0006/"/>
+      <url>/record/2021/04/24/ssn0006/</url>
+      
+        <content type="html"><![CDATA[<p>我最近在做什么？</p><p>我停止更新了周刊近一个月</p><p>没有push代码一个月</p><p>我这段事件究竟做了什么？</p><p>在工作上，我主要在做需求对接相关的事情。</p><p>我做了目前项目的通用功能的梳理。</p><p>做数据表的设计，和对旧系统数据的一些梳理。学习一个新系统该怎么设计好数据表，学习怎么去做数据迁移。</p><p>还有就是做杂七杂八的一些事情。</p><p>关于其他，跟她清明玩了三四天。母亲大人月中也来北京，周末就基本出去转了。</p><p>还有就是入坑原神…..</p><hr><p>四月末，这个月的确没有做什么事情。</p><p>后悔没有用，下个月立一些flag。</p><ul><li>上下班骑自行车。</li><li>每天编程一小时。（docker）</li><li>（提升自己的技术竞争力）学习一小时（日报）。</li></ul>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>时间是如何浪费掉的？</title>
+      <link href="/record/2021/04/09/ssn0005/"/>
+      <url>/record/2021/04/09/ssn0005/</url>
+      
+        <content type="html"><![CDATA[<p>  几天前，我意识到了一件令人惊讶的事情：浪费时间的最危险方法不是花时间在玩，而是花时间在做假工作。</p><p>  当你花时间玩乐时，你会知道自己在放纵。内心的警报很快就会发出。如果某天早晨我醒来后，整天坐在沙发上看电视，我很快会觉得自己一定是做错了什么。这样一想，就让人不舒服。你只需要在沙发上看电视2个小时，就会有这种不舒服的反应，更不用说整天看电视了。</p><p>  但是，还有一些天，你整天都在忙，等到晚上你问自己今天干了什么，回答是：虽然很忙，做的却没什么意义。</p><p>你的感觉也会因此不好，但是不像整天看电视那样糟糕。如果我整天看电视，我会觉得自己正在走向灭亡，但如果是忙忙碌碌做无意义的事情，这样的警报就不会响起。因为我所做的事情表面上看起来像是真正的工作，比如处理电子邮件。</p><p>  表面上看，你一天都在办公桌前工作，但其实你也是在浪费时间，因为这不会让你的生活发生真正的变化。而且由于你的内心不会发出警报，比起看电视，假工作才是浪费时间最危险的方法。</p><p>  时间要用来做对你真正重要的事情，不要落入假工作的陷阱。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（07期）</title>
+      <link href="/record/2021/04/01/%E6%9D%82%E8%B0%88(07%E6%9C%9F)/"/>
+      <url>/record/2021/04/01/%E6%9D%82%E8%B0%88(07%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ol><li>川普卸任总统后剪了一个自我介绍的<a href="https://www.45office.com/">网站</a>，前些天新闻他宣称四年后要继续竞选总统，颇有种老骥伏枥，刘备的那个感觉，不过川普是46年生人，现在已经75岁了，能不能活过四年还是个问题，我倒是希望他能完成目标，如果这样的话，他可能是美国历史上第一个老死在任上的总统。</li><li>最近对币圈关注比较多，也随意买了点（DOGE，NFT…）,不过我发现里面真的是千奇百怪，随便列举几个币的名字（PPT，DNA…），买币我的想法就是拿出你丢了也不心疼的钱去买币即可，顺便推荐一个这方面比较好的浏览器<a href="https://chrome.google.com/webstore/detail/%E5%B0%8F%E5%B8%81/acbboldcmppilbflnijahpgobpkkifkh">插件</a>.(需外网)</li></ol><ul><li><p>工具资源</p><ul><li><p>SpringBoot中配置文件格式<a href="https://www.toyaml.com/index.html">转换</a>  <code>.properties</code>与<code>.yaml</code>互转。</p></li><li><p>Java并发源码视频<a href="https://v2ex.com/t/777374#reply22">讲解</a>，不过看评价挺好的，我还没来及看。</p></li><li><p>github中文项目<a href="https://github.com/kon9chunkit/GitHub-Chinese-Top-Charts">排行榜</a>，emmm，发现榜上很多都是面试、入门教程、推荐、笔记类的内容。国内圈真正硬核类似druid的东西还是不多，希望以后进步。</p></li><li><p>之前我就想过，我对我一直用的IDEA了解多少，我真的会用他？我发现我真的对它并不了解，很多时候项目导入，或者配置的时候出现问题可能解决起来要浪费好多的时间，这些时间被用来做一些没有意义的事，这样的感觉就跟糟糕，所以工欲善其事，必先利其器。看到一个IDEA的使用<a href="https://cdk8s.gitbook.io/github/">教程</a>，值得好好一读</p></li><li><p>github中文项目<a href="https://github.com/kon9chunkit/GitHub-Chinese-Top-Charts">排行榜</a>，emmm，发现榜上很多都是面试、入门教程、推荐、笔记类的内容。国内圈真正硬核类似druid的东西还是不多，希望以后进步。</p></li></ul></li><li><p>之前我就想过，我对我一直用的IDEA了解多少，我真的会用他？我发现我真的对它并不了解，很多时候项目导入，或者配置的时候出现问题可能解决起来要浪费好多的时间，这些时间被用来做一些没有意义的事，这样的感觉就跟糟糕，所以工欲善其事，必先利其器。看到一个IDEA的使用<a href="https://cdk8s.gitbook.io/github/">教程</a>，值得好好一读。</p></li></ul><ul><li><p>最近又看了一遍&lt;不能说的秘密&gt;,路小雨真的是很有气质的那种漂亮。(组织不出别的语言形容她了)<br><img src="https://i.loli.net/2021/05/30/2X9TIYwLUkuKG4b.png" alt="image-20210530151607893"></p></li><li><p>最近看到一个话题—人有没有自由的意志与独立的意识？ 人的行为都是由物质决定的。比如说，胳膊有些被蚊子叮了有些痒，你去挠这是一个没有经过独立意识思考过的一个动作，再比如说，喜欢一个人，可能并不是你喜欢，而是你的身体遵循交配的本能分泌了多巴胺等等一些激素，会让人感觉到喜欢的感觉。去工作是因为不去这具身体会没饭吃…我想吃一个东西真的是我自己想还是我的身体提出了身体缺乏某些营养，于是我得吃点东西的想法放在潜意识里，然后根据哪个意识最强烈进行选择，在现实中即我们做出了选择。我们真的有自由的意志吗？我觉得是有的，在这些层面之上我们应该还有一个“灵魂”，他不遵守物质层面的约定，比如说，思考自己究竟有没有自由意识对这具身体并无帮助，再比如说想起来一个几年前的新闻，大概就是讲大学生跳江救人，最后人救上来，自己没了。他在做出这个决定的时候我相信他的“身体意志”肯定是不同意的。</p><p>但我不知道有多少人向我这样想过，我也相信有很多人一辈子的灵魂困在“身体意志”之中。</p></li></ul><ul><li>其他这样不错，不定时杂谈，欢迎交流评论，懒得发别的频道了。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>随想</title>
+      <link href="/record/2021/03/25/ssn0004/"/>
+      <url>/record/2021/03/25/ssn0004/</url>
+      
+        <content type="html"><![CDATA[<p> 晚上听歌，做白天计划的博客内容，歌单很惊喜，听的只想跳舞。编码挺不顺利，不过勉强不算浪费。停下来出去转了一阵，感觉自己越发的超脱，看破红尘，灵魂又出窍高高的俯视这肉身。<br>  就是莫名的超脱，感觉人生不过如此，站的高一眼可以望到头。感觉爱情不过如此，不过是一个人活的艰难，有个人可以相互依靠，然而我并没有经历过大起大落的人生，没有完整的经历过爱情，我为什么会出现那种超脱的感觉？<br>  博客我觉得基本内容就这样了，要做迭代的话就是做一些实验性的迭代，比如说引入redis让每次加载自我介绍的时候不要出现function好几秒才能加载出本来的自我介绍。把博客打成docke r和服务器中其他服务放在服务器中，还有可以试试配置数据库连接池，这很多可以做的，为什么非要盯着前端那点样式不停的改改改呢？</p><p>  做一个助手robot的确是个不错的主意，但是用万事开头难在我不知道怎么下手，怎么敲下第一行代码。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>记一次服务器破防</title>
+      <link href="/record/2021/03/22/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A0%B4%E9%98%B2/"/>
+      <url>/record/2021/03/22/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A0%B4%E9%98%B2/</url>
+      
+        <content type="html"><![CDATA[<p>今天刚回家下载好了原神就开始玩，下班到家就开始玩，玩到快十点的样子终于感觉到自己有些上头了，然后手机一看aliyun的短信:</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">【阿里云】尊敬的dianedii：云盾云安全中心检测到您的服务器：xxxx（xxx...）出现了紧急安全事件：</span><br><span class="line">恶意脚本代码执行，建议您立即登录云安全中心控制台-安全告警处理http://a.aliyun.com/f1.mNLog 进行处理</span><br></pre></td></tr></table></figure><p>不会吧不会吧，数据库不会被人搞掉吧。上线一看系统六点二十四被打….那会我刚玩游戏…还好数据还在…虽说数据也就是博客的一些内容个一些小的服务接口(可能人家看不上)…不过还好还在。</p><p><img src="https://i.loli.net/2021/03/17/xFeOvt1nWUg78Ad.png" alt="img"><img src="https://i.loli.net/2021/03/17/JVxDhjoRNYfCXes.png" alt="img"><img src="https://i.loli.net/2021/03/17/BxwWCcF6uGjd2YP.png" alt="img"></p><p>  进了aliyun控制台也不知道看了一下是被执行了恶意脚本…图省事直接重启.</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">告警原因：持久化后门</span><br><span class="line">详情：crontab计划任务导致了该告警的产生。crontab是Linux操作系统中常用的计划任务服务，黑客或恶意程序常常会通过添加修改cron任务使恶意程序定时重复启动，保持驻留。</span><br><span class="line">建议：您可以手动查找crontab中的异常项目进行处理，或使用病毒扫描功能对主机进行全面的扫描清理。</span><br></pre></td></tr></table></figure><p>  原因应该是我为了图省事，开放了服务器的所有端口，这是开放的第二天…以后再也不敢了QAQ，安全之心要一直有，我还需要搞个数据库定时备份脚本….</p><p>  最后，给大家观摩一下这个邪恶的脚本，可以在自己虚拟机试一试，仅供学习观摩使用,点此<a href="https://dianedii-wallpaper.oss-cn-beijing.aliyuncs.com/b.sh">下载</a>。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 运维 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>理想的工作状态</title>
+      <link href="/record/2021/03/18/ssn0003/"/>
+      <url>/record/2021/03/18/ssn0003/</url>
+      
+        <content type="html"><![CDATA[<p>今天认真看了湾区日报的一些建设方面的<a href="https://wanqu.co/b/7/%E6%B9%BE%E5%8C%BA%E6%97%A5%E6%8A%A5%E6%98%AF%E5%A6%82%E4%BD%95%E8%BF%90%E4%BD%9C%E7%9A%84/">文章</a>，作者一个人用业余时间优雅的运行维护这样一个<a href="https://wanqu.co/">网站</a>，并且做的有声有色我真的是五体投地。作者现在的工作的状态正是我的我理想中的工作/编码生活，如何工作，写文字，如何认真的做一件事情。</p><p>同样的发现了菜鸟教程也是一个人在维护与建设而不是一个团队，还有其他很多很厉害的人，他们的生活工作方式突破了我的认知，最大程度的构建工具使大部分工作自动化运行。高效的编码，一个小时来做一次简单的迭代。每天花一到三个钟头来进行阅读。对比一下才发现人和人的差距真的就是在一天天中拉开的。我的一天顶人家高效的一个小时，这感觉特别不舒服。</p><p>我能在我的工作生活中做什么东西？</p><ol><li> 可能也需要构建一个自己的机器人/更多的脚本（docker构建一些内容，免去一些同质化的操作）</li><li>做一个筛选，对我目前从媒体上获取的东西做一个分类与整理。</li><li>idea的管理，与实现，我觉得我开了一个好头，我的想法是编程仅仅为了工作就有点没意思，能用到他帮助到我，才算是编程的意义。（不知道我几年后还会这么想吗）</li><li>身体的管理，这点相当失败。</li></ol><p>​    做完这些东西也相当于检视了自己，有点像玄幻小说中武者突破后有了内视的能力，可以看见丹田内功运行到什么程度，也像监测服务器各项指标的脚本，我们实时的监测服务器是否正常，监测微服务系统的运行。为什么就不能实时监测我们自己呢，完整的把握自己，清晰了解自己的情况。由心理到身体实时监测，并做统计报表，分析并在适合的地方发力。这才是我觉得好的方向，科学进步的方向。</p><p>PS:脑洞大开，想起了刘徽的割圆术，机器就像一个五边形，把它割呀割，割到极致的时候可能就是人这个样子了。所以反过来说人也是机器迭代极致版。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（06期）</title>
+      <link href="/record/2021/03/18/%E6%9D%82%E8%B0%88(06%E6%9C%9F)/"/>
+      <url>/record/2021/03/18/%E6%9D%82%E8%B0%88(06%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<p>三月的最后一期，心情有些伤感。</p><p>博客园突然的关了一段时间，更加坚定了我独立博客的念头。</p><p>有点摸索到我想分享什么。不想分享新闻，就想探索互联网下的边边角角，走到哪看到哪，记下一部分这个有意思的世界。</p><ul><li>知识</li><li>什么是webservice，对此不太了解的人可以读<a href="https://www.cnblogs.com/xdp-gacl/p/4048937.html">这篇</a>文章，看完基本就懂了。<ul><li>Linux中chown与chgrp具体是做什么的，还记得吗，不太清楚的可以看一下<a href="http://www.voidcn.com/article/p-aprjsdlm-mk.html">这篇</a>文章。</li><li>刚开始学redis的时候，了解了redis的这个那个特性，但不知道怎么在项目中可以用到，这篇<a href="https://www.jianshu.com/p/72b0c4aa89cc">文章</a>讲了在springboot框架下怎么使用redis。</li><li>最近才发现apache实现了Java的很多工具类，很多工具类都是重复的实现一个功能，以下是apache-common常见工具类的一些<a href="https://segmentfault.com/a/1190000020376765?utm_source=tag-newest">介绍</a>。</li></ul></li></ul><ul><li><p>资源</p><ul><li><a href="https://oncetalk.com/login.html">轻说</a>，一个随想记录平台，的确有这个需求，轻社交，有些东西记在手机备忘录总感觉会埋没一样，不过我开始用twitter来满足我的需求。</li><li><a href="https://duibiao.info/">职级对标</a>，一个包括但不限于分享薪酬的网站，好像目前只有大厂，我找到<a href="https://duibiao.info/2020">这里</a>，算了一下在拼多多工作的人，如果每周能休息一天，那他剩下六天里每天要工作11个小时。</li></ul></li><li><p>文章</p><ul><li>2021全球胡润富豪<a href="http://www.jjyc.org/a/d/213389">排行榜</a>，扎克伯格最年轻，39岁。中国最富是农夫山泉的钟睒睒（shǎn）。</li><li>一个程序员在创业公司工作一年的<a href="https://www.cnblogs.com/xdp-gacl/p/5294181.html">经历</a>，真实的写照。</li></ul></li><li><p>言论</p><ul><li>人为什么害怕独处？因为人在独处的时候，总是会听到心灵深处的声音，这个心灵深处的声音会不断地逼问你，“你这一生到底想干嘛，你怎样活着才是有意义的”，当这个声音不断逼问你的时候，你会觉得烦躁，你会觉得焦虑。因为你耳边始终有这种声音，所以你会堵住耳朵，你说，“别说了”。而当这个声音，沉寂的时候，你又会感到空虚，会感到迷茫。所以当你独处的时候，你始终在焦虑迷茫空虚中，周而复始。大部分的人，会选择拒绝倾听心灵深处的追问，他们会选择用忙碌来对抗这种事，放肆娱乐，拼命工作      –罗翔</li><li>今天被工长骂了说我水泥拌的太稀 工长把我的铁锹锤烂了 问我水是不是不要钱 我不敢反驳 他不知道的是 我没有多放水 只是拌水泥时很想你 眼泪掉进了水泥里。 –佚名</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>如何将网站转成https站点</title>
+      <link href="/record/2021/03/10/%E5%A6%82%E4%BD%95%E5%B0%86%E7%BD%91%E7%AB%99%E8%BD%AC%E6%88%90https%E7%AB%99%E7%82%B9/"/>
+      <url>/record/2021/03/10/%E5%A6%82%E4%BD%95%E5%B0%86%E7%BD%91%E7%AB%99%E8%BD%AC%E6%88%90https%E7%AB%99%E7%82%B9/</url>
+      
+        <content type="html"><![CDATA[<p>1.前提条件及准备工作</p><p>​    以阿里云平台为演示：</p><p>​    首先已经准备好：云服务器，已备案域名</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/TB1Fe9fxQP2gK0jSZPxXXacQpXa-1006-109.svg" alt="流程" style="zoom:50%;" /><p>2.申请免费ssl证书</p><p>​    我们选择DV证书，以下是具体流程。</p><p>​    进入aliyun控制台在产品与服务中找到域名入口，</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218163801766.png" alt="image-20210218163801766" style="zoom: 33%;" /><p>​    点击进入域名详情</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218163920029.png" alt="image-20210218163920029" style="zoom:33%;" /><p>​    点击开启SSL证书，如下，并点击购买证书。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218163405023.png" alt="image-20210218163405023" style="zoom:33%;" /><p>​    出现如下界面，直接点击 ‘ 证书资源包 ’链接。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218164158722.png" alt="image-20210218164158722" style="zoom:33%;" /><p>​    选择相对应的选项如下，证书个数选20就行，一年只用一个。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218163326513.png" alt="image-20210218163326513" style="zoom:33%;" /><p>​    购买后，返回控制台，在‘ 产品与服务 ’中点击‘ SSL证书（应用安全）‘，进入后点击左侧证书资源包，点击证书申请。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218164838734.png" alt="image-20210218164838734" style="zoom:33%;" /><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210218164934982.png" alt="image-20210218164934982" style="zoom:33%;" /><p>​    按照提示填写相应个人信息即可申请成功。</p><p>3.服务器安装证书</p><p>​    申请成功后点击’’证书下载’’，下载相应证书，这里以nginx证书为例进行证书的<a href="https://help.aliyun.com/document_detail/98728.html?spm=5176.14113079.0.dexternal.3e4756a7koL93c">安装部署</a></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 运维 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（05期）</title>
+      <link href="/record/2021/03/08/%E6%9D%82%E8%B0%88(05%E6%9C%9F)/"/>
+      <url>/record/2021/03/08/%E6%9D%82%E8%B0%88(05%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>知识</p><ul><li>常见Mysql方面的面试<a href="https://blog.csdn.net/u014209205/article/details/83051001">知识</a>。</li><li>一个秒杀系统的<a href="https://github.com/zaiyunduan123/springboot-seckill">实现</a>，想了解Redis在SpringBoot中怎么用的可以看一下其实现。</li></ul></li></ul><ul><li><p>资源</p><ul><li>HUBOT,一个可以可扩展的机器人<a href="https://hubot.github.com/">助手</a>,我没添加其他方向上的修饰形容词，是因为它可以可做到的方面太多了，我尝试搭建了hubot，并在slack上操作他。</li><li><a href="https://stackoverflow.com/">stackoverflow</a>，国外比较热门且氛围比较好的论坛，最近论坛逛的太多了：CSDN，博客园，V2EX,吾爱，掘金，语雀。发现的确是CSDN垃圾最多，这点在它的排行榜很容易就看出来。还有得到的教训就是少逛论坛，多敲代码。</li><li>谷歌<a href="https://calendar.google.com/calendar/">日历</a>，最近发现出奇的好用，已替换本地的日历推送。</li><li><a href="https://slack.com/">Slack</a>，办公交流协作平台，整合类似钉钉+QQ+微信随时拉群+各种三方扩展，的确好用，支持国内。</li><li><a href="http://chs.desktopcal.com/chs/">desktopcal</a>，一款好用的windows桌面日历日程软件</li></ul></li><li><p>文章</p><ul><li>一个人怎么在业余时间维护一个网站&amp;APP，湾区日报作者的<a href="https://wanqu.co/b/7/%E6%B9%BE%E5%8C%BA%E6%97%A5%E6%8A%A5%E6%98%AF%E5%A6%82%E4%BD%95%E8%BF%90%E4%BD%9C%E7%9A%84/">自述</a>。</li></ul></li><li><p>言论</p><ul><li>不要到处宣扬自己的内心，这世上不知你一个人有故事。 –知乎用户</li><li>我无法控制自己对你的难以忘怀，可是我对关于你的一切已经再也没有了期待 –《one day》</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>赘婿</title>
+      <link href="/record/2021/03/07/ssn0002/"/>
+      <url>/record/2021/03/07/ssn0002/</url>
+      
+        <content type="html"><![CDATA[<p>最近在追这个《赘婿》这个电视剧，分明就是庆余年原班人马凑一块，翻拍了一版低质量的翻版电视剧，我刚开始是在B站上看到有人提这个才想着看一下的态度结果钻进去了….上周一下更新了八集我tm熬夜一下子全给看完了，电视剧逻辑1分（满分10），轻松8分，乐呵8分，看完我也明白了，人家拍着电视剧的就没想着拍出逻辑来，就整一轻喜剧出来，哎，就主打”搞笑”,”轻松”，就是给大家放松来的。看到很多人批评这电视剧不合理，这不行那不行的要么是没看懂人家拍着电视剧意思，要么就是顺着这流量给自己涨涨热度的。</p><p>  这个风老早就有，刚开始就小说嘛，爽文无限升级，扮猪吃老虎，为了读者爽，这种套路多了后，不太吃香了，就在小说上就慢慢就转换形式，但是本质上是不变的啊，反正就是变着法让读者爽，然后前两年就发现有那种动漫（番），就也是这种了，反正无敌啊爽这种套路就从书就到漫画了现在小说改电视剧，本来就一挺爽的文编剧再一加工，再德云社少东家一出来，这电视剧也就开始搞着套路了，这电视剧就是《赘婿》这个样子了，哎我啥都不管，我就管让你能笑出来就行。</p><p>  当然我这样下去是不行滴，这个拍电视剧吧，这个歪风邪气一起，就各路大神就都会跟风效仿，就怕是会越来越无脑了，虽然我如此说吧，我知道这个电视剧不行，但我还是想把它看完。我就吃这一套.</p><p>-–</p><p>看了后半截继续来吐槽，爱奇艺整个超前点播我理解，找个别的渠道也挺方便，边看边跳者看完了，这剧情越来越离谱…..我不禁怀疑自己是不是闲的没事干，我收回之前的话，我吃不了这一套了，这爽剧我看不下去了，完全是《庆余年》的拼多多版，还是9.9包邮那种。</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>我的吉他</title>
+      <link href="/record/2021/03/03/ssn0001/"/>
+      <url>/record/2021/03/03/ssn0001/</url>
+      
+        <content type="html"><![CDATA[<p>​    B站上经常看见各种乐器的视频，看越多平台也就推送越多，然后就经常看到弹吉他的视频了，昨天还是前天，脑子里突然就蹦出了个想法，买一把吉他吧。</p><p>​    我做事三分钟热度，我自己深刻了然，但是这个念头还是挥之不去，然后想一想，买一把入门里面最便宜的，如果坚持不下去就走闲鱼….</p><p>​    ok,昨天晚上就下单了，京东基本上最便宜的吉他，卡马D1c,今天晚上到，有点期待。</p><p>​    这会已经下午了，脑子里又不由自主冒起了悲情魔音，呆唯，现在无心工作.</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 碎碎念 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySQL使用全文索引实现大字段的模糊查询</title>
+      <link href="/record/2021/03/02/MySQL%E4%BD%BF%E7%94%A8%E5%85%A8%E6%96%87%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E6%A8%A1%E7%B3%8A%E6%9F%A5%E8%AF%A2/"/>
+      <url>/record/2021/03/02/MySQL%E4%BD%BF%E7%94%A8%E5%85%A8%E6%96%87%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0%E5%A4%A7%E5%AD%97%E6%AE%B5%E7%9A%84%E6%A8%A1%E7%B3%8A%E6%9F%A5%E8%AF%A2/</url>
+      
+        <content type="html"><![CDATA[<ol><li><p>场景说明 </p><p>有一个需求，用户输入关键字对博客系统内所有含有该字段的文章(标题&amp;简介&amp;内容)进行展示，我自然而然地想到了索引。这里我是在CentOS7下MySql5.7版本的数据库.</p></li><li><p>创建表</p><p>因为是一个全局搜索的的需求，用户输入关键字对博客系统内所有含有该字段的文章(标题&amp;简介&amp;内容)进行展示,(上表只是文章内容表)，由于要对文章内容进行搜素，而文章内容content在数据库中是以text存储的，所以为了查询效率，这里就需要使用索引，由于是查大文本，这里选择使用全文索引(fulltext).</p></li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">DROP TABLE IF EXISTS `tbl_article_content`;</span><br><span class="line">CREATE TABLE `tbl_article_content`  (</span><br><span class="line">  `id` bigint(40) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,</span><br><span class="line">  `article_id` bigint(40) NOT NULL COMMENT &#x27;对应文章ID&#x27;,</span><br><span class="line">  `create_by` datetime(0) NOT NULL COMMENT &#x27;创建时间&#x27;,</span><br><span class="line">  `modifield_by` datetime(0) NOT NULL COMMENT &#x27;更新时间&#x27;,</span><br><span class="line">  PRIMARY KEY (`id`) USING BTREE,</span><br><span class="line">  INDEX `artid`(`article_id`) USING BTREE,</span><br><span class="line">  FULLTEXT INDEX `content_word`(`content`) WITH PARSER `ngram`</span><br><span class="line">) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;</span><br><span class="line"></span><br><span class="line">SET FOREIGN_KEY_CHECKS = 1;</span><br></pre></td></tr></table></figure><ol start="3"><li>创建索引（使用ngram解析器）</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create fulltext index content_word on tbl_article_content(content) WITH PARSER ngram;</span><br></pre></td></tr></table></figure><p><code>ngram</code> 是一个支持中文索引的分词引擎， 在这里我们对<code>tbl_article_content</code>表的<code>content</code>字段建一个叫<code>content_word</code>的全文索引.</p><ol start="4"><li><p>mysql配置（my.cnf） </p><p>mysql默认是没有开启与配置ngram的，所以在建立索引后对mysql进行配置 打开mysql配置文件</p></li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/my.cnf</span><br></pre></td></tr></table></figure><p>在[mysqld]下加入</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ft_min_word_len=1    #全文索引的最小搜索长度。默认是4</span><br><span class="line">ngram_token_size=1   #分词的大小设置，这里设置越小，索引越大</span><br></pre></td></tr></table></figure><p>在终端重启mysql</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart mysqld</span><br></pre></td></tr></table></figure><p>如果是在已有的表上对某一个字段增加索引，在此需要修复一下之前创的索引.</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">repair table tbl_article_content</span><br></pre></td></tr></table></figure><ol start="5"><li>如何在项目中使用刚才创建的索引进行查询呢？</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select article_id FROM tbl_article_content WHERE MATCH(content) AGAINST(&#x27;没有了&#x27;);</span><br></pre></td></tr></table></figure><ol start="6"><li><p>总结问题 </p><p>从MySQL 5.7开始，MySQL内置了ngram全文检索插件，用来支持中文分词，并且对MyISAM和InnoDB引擎有效，使用的时候注意自己版本号和配置.</p></li><li><p>   相关命令</p></li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">show create table tbl_article_content; //查询当前表信息</span><br><span class="line">SHOW VARIABLES LIKE &#x27;%ngram%&#x27;;  //查询ngram引擎配置信息</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（04期）</title>
+      <link href="/record/2021/03/01/%E6%9D%82%E8%B0%88(04%E6%9C%9F)/"/>
+      <url>/record/2021/03/01/%E6%9D%82%E8%B0%88(04%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<p>写在前面，周刊有些名不副实了，写这个的时候发现自己一周也没有摄入多少有营养值得分享的东西，就目前来看，周刊已经变成半月谈了hh。</p><ul><li><p>知识</p><ul><li>一篇有意思的讲工作流引擎的实现的<a href="https://www.cnblogs.com/duck-and-duck/archive/2021/03/03/14436373.html">文章</a>，由简入深，文风诙谐。</li><li>解释什么是<a href="https://blog.csdn.net/weixin_43719843/article/details/114610825">微服务</a>,顺便感叹一句，为了解决用户量与并发的问题，使用微服务引入了更多的问题。</li></ul></li></ul><ul><li><p>资源</p><ul><li>一个显示访问IP的<a href="http://pv.sohu.com/cityjson?ie=utf-8">接口</a>,可以用来统计网站访问IP</li><li>电视剧&lt;赘婿&gt;全集观看<a href="https://www.tlyy.cc/dsj/dsj1/zhuixu/bf-0-32.html">地址</a>,其他影视资源也比较齐全。</li><li>一个网络流行语收集查询<a href="https://jikipedia.com/">网站</a>,人老了很多梗也不是实时能追到的,之前一直明白RickRoll是什么梗，辛苦查了半天。</li><li><a href="https://www.v2ex.com/">v2ex</a>,一个创意工作者的社区，基本都是互联网相关，社区比较严格，氛围很棒。</li><li>一个README中的徽标生成<a href="https://shields.io/">网站</a></li></ul></li><li><p>文章</p><ul><li>在银行做软件开发的优劣，别人的<a href="https://www.cnblogs.com/didispace/archive/2021/03/01/14463731.html">经验</a>。</li></ul></li><li><p>言论</p><ul><li>你在这里所做的每一件事情，都会消耗你的时间。倘若一件事情做完之后，无法得到任何有意义的回应，那么这件事情就像是白做了。如果一个人持续做那些无意义的事情，那么他实际上就是在浪费他的时间。 –v2ex</li><li>区块链不会骗人，但有人用区块链骗人。–佚名</li><li>坚持本身就是一种很厉害的能力 –佚名</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（03期）</title>
+      <link href="/record/2021/02/18/%E6%9D%82%E8%B0%88(03%E6%9C%9F)/"/>
+      <url>/record/2021/02/18/%E6%9D%82%E8%B0%88(03%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>知识</p><ul><li>怎么在GitHub个人页设置个人介绍进行展示，这里是<a href="https://blog.csdn.net/qq945655645/article/details/108745636">教程</a>。</li><li>形象的<a href="https://www.wmyskxz.com/2021/02/16/wang-luo-4/">科普</a>浏览器是怎么运行的。</li><li>工厂模式的一个形象<a href="https://www.cnblogs.com/foxhappy/p/14419557.html">讲解</a>。</li></ul></li></ul><ul><li><p>资源</p><ul><li>算法学习，leecode刷题技巧，<a href="https://labuladong.gitbook.io/algo-en/v/master/">labuladong的算法小抄</a>。</li><li>一个有意思的<a href="https://yihong.run/">博客</a>，它的友链也值得一去。</li><li>bing每日壁纸汇总与<a href="https://bing.ioliu.cn/">下载</a>。</li><li>软件脱壳破解入门<a href="https://www.52pojie.cn/thread-1358649-1-1.html">教程</a>。</li></ul></li><li><p>文章</p><ul><li>对于工作的<a href="https://new.qq.com/omn/20191011/20191011A0RHS400.html">看法</a>。</li><li>别的普通人2020的<a href="https://www.cnblogs.com/Twittytop/p/14421753.html">总结</a>。</li><li>一个有意思面试<a href="https://www.techug.com/post/sorry-cant-hire-you.html">吐槽</a>，看完可以去做一下这道<a href="https://leetcode-cn.com/problems/invert-binary-tree/">题</a>。</li></ul></li><li><p>言论</p><ul><li>开发中遇到越是奇葩的问题，越应该从基础上排查。     – dianedii</li><li>工具好不好主要看用的人。 —-Mantra</li><li>腾讯三分之一的收入是游戏。一年 1000 多亿元的游戏收入，常年在世界游戏公司收入中排名第一。讽刺的是，这个第一既做不出像使命召唤、星际争霸这样征服全球的 3A 游戏，也不能像 Microsoft、任天堂、索尼一样，做出 Xbox、Switch、PS 这样的顶级游戏硬件。这个星球上最赚钱的游戏公司，却对游戏行业的进步提供不了一丝一毫的推动。他是全世界最尴尬的游戏之王。–匿名</li><li>这是一个千年未遇的大时代，大家的温饱都解决了，可是我们却比任何一个时代都更焦虑，这太不可思议了……    –<a href="https://www.huxiu.com/article/376133.html">郑也夫</a></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（02期）</title>
+      <link href="/record/2021/02/08/%E6%9D%82%E8%B0%88(02%E6%9C%9F)/"/>
+      <url>/record/2021/02/08/%E6%9D%82%E8%B0%88(02%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>技术知识</p><ul><li>Java中队列queue使用的比较多，这里介绍Java中的双端队列<a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265122668445536">deque</a>。</li><li>你真的了解GET请求与POST请求吗，还是只是停留在浅层，这篇文章由浅入深介绍<a href="https://www.cnblogs.com/yinrw/p/10694735.html">GET和POST两种基本请求方法的区别。</a></li><li>作者亲历解决一个SQL注入问题，讲了怎么规避sql注入的一些方法。  <a href="https://www.cnblogs.com/12lisu/p/14403500.html">卧槽，sql注入竟然把我们的系统搞挂了</a></li><li>理解递归<a href="https://blog.csdn.net/allenchenhh133/article/details/80291252">思想</a>，讲的比清晰明了。</li></ul></li><li><p>互联网资源</p><ul><li><p>一个好用的<a href="https://www.mdnice.com/">Markdown排版工具</a>，优点是支持一键转化公众号，知乎掘金等平台。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210219205059081.png" alt="image-20210219205059081" style="zoom:50%;" /></li><li><p>Java程序员进阶/面试向的文档<a href="https://github.com/crisxuan/bestJavaer">教程</a>，作者相当认真。</p></li><li><p>一个内容聚合搜索<a href="http://search.kunhai.xyz/">引擎</a>，优点是聚合的引擎相当全面，缺点是搜索结果页面头部优点臃肿，不太好看。</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210219205015248.png" alt="image-20210219205015248" style="zoom:50%;" /></li><li><p>一个有意思的骗子<a href="http://www.hczwq.com/">网站</a>。（成功学分支）</p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210219204911571.png" alt="image-20210219204911571" style="zoom:50%;" /></li></ul></li><li><p>文章</p><ul><li><a href="https://news.cnblogs.com/n/688057/">网红小游戏割韭菜套路大揭秘</a>，以微信小游戏为主，讲了小游戏发布的乱象，我以前也沉迷过一个开车过关游戏，玩了整整一天，幸好只是看广告和转发。</li><li>电影推荐： <a href="https://www.bilibili.com/bangumi/media/md60452">我在伊朗长大</a>，以一个伊朗家境优渥子女的角度讲解这个国家的不幸与悲哀，关于人的一些思考，动画黑白电影。</li><li><a href="https://lemire.me/blog/2018/12/06/asking-the-right-question-is-more-important-than-getting-the-right-answer/?utm_source=wanqu.co&utm_campaign=Wanqu+Daily&utm_medium=website">提出一个好问题比得到答案更重要</a>，当你一点一点明确自己要问什么的时候，有时候你就已经能找到答案了。</li><li>这篇文章以讲故事的方法来讲<a href="https://www.cnblogs.com/flashsun/p/14266148.html">什么是网络</a>，比看《计算机网络》有意思多了。</li></ul></li><li><p>言论</p><ul><li>一流的企业卖标准，二流的企业卖品牌，三流的企业卖产品，四流的企业卖苦力 –匿名</li><li>如无必要，勿增实体。 –奥卡姆剃刀原理</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>杂谈（01期）</title>
+      <link href="/record/2021/02/02/%E6%9D%82%E8%B0%88(01%E6%9C%9F)/"/>
+      <url>/record/2021/02/02/%E6%9D%82%E8%B0%88(01%E6%9C%9F)/</url>
+      
+        <content type="html"><![CDATA[<ul><li><p>后端知识</p><ul><li><p>雪花算法的原理及实现，通俗易懂，还有代码<a href="https://zhuanlan.zhihu.com/p/77811438">实现</a>。</p><p><img src="https://pic1.zhimg.com/80/v2-89659f2e11fdbdacd672a26b7be42068_1440w.jpg" alt="img"></p></li><li><p>滑动窗口算法，也叫尺滑法，这里是它的<a href="https://www.cnblogs.com/huansky/p/13488234.html">讲解</a></p><p><img src="https://img-blog.csdnimg.cn/20190305164439172.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xtMjc4ODU4NDQ1,size_16,color_FFFFFF,t_70" alt="滑动窗口算法基本"></p></li><li><p>计算机网络IP相关知识<a href="https://zhuanlan.zhihu.com/p/138235610">梳理</a>，生动形象，易于理解。</p></li></ul></li></ul><ul><li><p>资源</p><ul><li>github默认头像<a href="https://tools.prodless.com/avatar">api</a>，很有意思，还可以自定义部分参数，<br><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210204000722221.png" alt="image-20210204000722221"></li></ul></li></ul><ul><li>一个动漫番剧下载<a href="https://mikanani.me/">网站</a> ，界面友好，中文网站，资源较全，</li></ul><p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210204000347958.png" alt="image-20210204000347958"></p><ul><li><a href="https://www.yuque.com/">语雀</a>，一个质量比较高的程序员论坛/博客园/知识库，界面清爽，大佬多。</li></ul><p>  <img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210204000534368.png" alt="image-20210204000534368"></p><ul><li><a href="https://www.hutool.cn/">hutool</a>，一个开源工具集，封装一些复杂操作的一个Java工具类集合.</li></ul><p>  <img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210204000615375.png" alt="image-20210204000615375"></p><ul><li>AdGuard,一个浏览器广告拦截工具，还可以自定义拦截<div>,支持Edge，Chrome，FireFox，在相对应插件商店中下载，这里给出Edge下载<a href="https://microsoftedge.microsoft.com/addons/search/adguard?hl=zh-CN">地址</a></li></ul><p><img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210205103205221.png" alt="image-20210205103205221"></p><p>  <img src="https://dianedii-weekly.oss-cn-beijing.aliyuncs.com/img/image-20210204000801611.png" alt="image-20210204000801611"></p><ul><li><p>文章</p><ul><li><p>一名工人子弟的<a href="http://bbs.tianya.cn/post-no20-690736-1.shtml">人生经历</a>（兼谈机关生涯），讲述七八十年代一名普通人从上学到中年的经历，很有时代感，值得一读。</p></li><li><p>一个面试官角度的面试<a href="https://www.cnblogs.com/liyao0312/p/11368351.html">经验帖</a>（Java），思路是通用的，值得借鉴。</p></li><li><p><a href="https://www.yuque.com/zenany/up/high_productivity_work">如何高效工作</a>，达到期望的高效基本是不可能的，但尽可能地提高是必要地。</p></li></ul></li><li><p>言论</p><ul><li><p>如此生活三十年，直到大厦崩塌。 —《杀死那个石家庄人》</p></li><li><p>找逻辑的漏洞总是很容易，可是这并不能证明你牛逼。 —stromzhang</p></li><li><p>If you don’t make a choice, the choices make you    —佚名</p></li><li><p>先把自己置身于问题之中，才有机会解决问题。 —李靖</p></li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 期刊 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> weekly </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>鸡汤</title>
+      <link href="/record/2019/07/07/%E9%B8%A1%E6%B1%A4/"/>
+      <url>/record/2019/07/07/%E9%B8%A1%E6%B1%A4/</url>
+      
+        <content type="html"><![CDATA[<div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="OOPS, these decrypted content may changed, but you can still have a look.">  <script id="hbeData" type="hbeData" data-hmacdigest="430f28e1ec9e420f8f421e627653d2086356f0ed3dcfd2fe606af1a22187e11c">73ec4e90604b298de70b40cddedb7a1361b462f307d9ce1a3289179ffa3c19971747052032c958ed94579d485b517d21dd85bc0ace7924707c6e1a4259d6c94d772e65e8df9daf38cd1bf4cd1adc245f8450f4849e81858cb25c3c386f889946829d3ba21adad6ab46e67a174a9860291679e2e423635b283c8d753fd1310e51b1b49c079e6cb878e3bdb611c6f8b5f32c288126efb8716e8a25e16feb9cc126f48b7be90fcbec5e1121f929123450c8111fd415d1ef8f574d92b6d12585c32469454151c8235a10d98d48e65cb5488060e3dccc22b36ecb1111750c9da59ee9d4599672e8ba2f3396c7b824adcd99ef858c827bcab1608e4cf0ddc6ab5b3410fdb1b838257a2f4530b2f72da51e0b8f119d1521acd10b94bab1d8d61a6939beb228283030008953f2b7dc0f35c7a1916510716d362d04b7da78bd17a438db9f58ac9ce5617fba02bb2e7019a275b5454f311656bfcf2ea2f31e034e48333bfc9b9138c6017c2b9ced194127ffa554042f87b1c92f999694ffada3eb178c55ea71e6344062449d3a2815a9b24bbcd46cc461101e917fdbe12d8d3b575030e25ad6fd48829cfb4ffcdb2bb1fcdcea87238289f43067774d59a6fc177658ae98388d2d389c162e471268083fad1c53a615eba2193dc84cc816337ca9e529f0ab0deabda57dedd021d13a675bcf66bc87bc9266c4ad716c03f5be2f982b6a11ad086db6d56586a084787696abca38256a9fba6fc1ad525c6ebff181623dc28bbc7b0512e006943271bab95db383ed5466e87b77cbcaebc39dc98bc2445bad4684d7a7b83faa38ead783f549e6feaf0d84628624e667591733e556aef0619f8ecb68797e63de8f7ec3354108701f4fedc8dff8a99553caff0857429a8d24f0007e265151c8e6eadaff47824830e37c08368532d60a4952db194a6928e6dd45c83f036d44f67cd919a2592973a7722efcf3107780466f37d636ce3c6c857b95af91f50ab91718efd4d6038b04e5f9a268147f1bcc2a69829e82003e4133e92e46009b1136beb3e0a33e3e29983f121badd9cf87e8b05344015f05f57247f9d11b743a23b9ef0eced64592b29ff7a0e1bbaaaee43810aa15dc49a1d1eb6df93f3b57f57192a94c51c2cf61c3ffed9fe6a79e5b98bb39600f08d63d80d7725c3f9b57482ef4c5a3e954fb103ccca89a0dc4ecaf6e79a63aa9354cebca74dbaa8ed5713eb61146039a82be7eb707935c76872a3208d0621f79a147ec0af407fe865aa4f2778de458feb2e7d69a17667878b9f3faa8a63df96421273c77b7393e56bf5d0abdfd6aff4399924967e4b63c99ddc25e9e5652144872be1384845c6fda262d5c0de2916c88d2d2fc16df3f4c9addd283c434a6d14f1a72895c62df679a84d70eb140ed76f87f383003c47916e89fe4ce898df942e5b6d08ceca20d3c2dbccc4af773ee972cf8045fb3826428de9974afd22efce0b6e9384d5f7b80a68e4a0f6cff4fdbedc4f2fa32a717fa3c1b1d7f83a965fad82d44b2d2964e445feed49fdd62a403156b0828dfa94d64b5ec7046717e2ed82b67126f14374afd13ce58a4160ff52a85ec805b72829d4d880569ff1d35e0ef8919ef598f9bbada30a892821398739ba4854fb510dd9bd011b60ef16d0499086794a7e05585a4b6c9739ebe36f7c659d7668ee12ccf56d501eac94b72e653dac337727414b6a2a73381f025b78c098ccbe0618a68bce801db3174191f087168fd2d41a1f947f228a827208f1cbf61ed5ba08568fc61fc9647874fe11b76e5e250dfe8652141b92b4a7d3003ce7c7cb5278672ed94141c260502e86b200545c0c909747b21c49e351a73ab3c500fbdcdf1afb8c366d84b28be5ac8422ff2ffe8d8d8282614a8500aef9b4312aa38edcfbe66fdc102921fc7ac8bcfcbe3c6bf5326ce9281297ad2a4ea4f92d404f6b980b1178983c198362ea1cd77f6299ae97481417d65432d85597890408b7facfdd39e566118476fb913d72fcb35662436f12bf2b499b159d038efc70804dd54c269856df48a68a367198357c7146dc128134a00240eb72259e563fbfadcdf7acfe78caf8800f2d01d58f34877fc2b2c94d7a95c7b4de21e641ad2dd84a3aa6a607b80e6df7a47282b0335ebf3862dbdf739bf4c04cdea89e3860da4287cc1e1cf05287ff339ca29d18fd0b3b25bae7d1996a3efc9d7a03308e653db118911239b677a9bc20d57f3141a202e257cf849d60dc0fc9f8ddbf6b9901ad91b57fe08bd10d3e7b140b2bd0c1556cc80a0e8dca6ee6d5fe03d1b79bb173f85f45e1f94f6c14cd305a93d1b082356fd7b6adbf28ee6e8619d4cd7ec7c57a9207cf9345bdf84aecab6cd43ed29776d55e12d09cc1b7e734483f40c86408942c270ad02fa3bf1c28d54c4e559a9d8d9f16379b4e2387f1348f98be4dbbdb26d561da7a3f147de2c23d46b30a53d929944684a916829cb496251b384fb4d9e3bbe905dbe3c7f7218c35c1ce5cd62313baf0db320d4691f7738ba083fc79695ff8db256d740171304b934efd4055e4cfb2a10b2f1fbae774adb3e1f3e4d04334e9e008a64b36fddc973cf04460c442cf23d91e917f7dffdb86f04983594533b54aa342f9502e49571f0556b12f2c8266080b55781bbc9fadc76a4874101554abdf4fbb761dfb94afc2a45e33672df36290e13033a09a5bba699df2548119aa1d5f8e3a6052d7edfc1021ff6f13324fb1e506bf9f9d1d015fc693361def27805e3bafddc9c9ea5f43c2dcbb700ed76581ea1264a579919ed92c0b701fcc5a798c4b5554dcecf8b3bfc6f5ee21e89cf22d1b8ae27937acd4451a8442c5ba2fdec83da1b65c72dba53793b0976b007ce9ec911c8c5e7c4bbc53a63f461f280c13d91a157c335a18937b2d68731205c0ed9ac2cc75e9249cf10c0056d2ba79d23d923a334a25696146a42c2a73f6f10d28456cab6e518dae0ac8e0bd66beaf662ac3d0d281c1a0cbc4bdcb26051a6fd55477a5b9c183b7a40bb74934e432e21fbee3ea55030de44e52270c2f300e4b308d69cf26f785e8571ef5443f77832e73606165086c0f13831ff3ac2a361a4dd0ce890f74880e3e5064a553f747c05a82fd1be450a0d9e0ca4f3466da2bc9aa65d589ed76d328a3df72a684f1ce64e4634d8fec356fe5b0c63d682b701343a6d3cb9c3216ed560134dbf959f4cf46c0364d104f8166b03e77f1d4900a66ee179256311faafee8df850e9c40eea312e7e4550cab11421b1553d19211f2b2658cd43b30d5a5903ce229e2fffd92d94c503060d3b389506f6a2297b75b1a1e06c3c8e0e9931a38733f9d628703a3209f358fa8bdd1b2443c2390cfd9301e5a9c901010c1e54af2b1f3349f4b8f8ccf8241def824d3db5058f43286875923b7b843eda12e3f35059139ea0f894e1d02f94b10b637fd9890db21e75d41b03b90137e511253c90be81460c629d9dcd1857e993cfa4653536cad1f9a9cd82ead03bd9a72639413a5c789a67fc0c437df428d0f21f9b85c6907e7990c704aebb3fc1cc014d13f3429df53030d154692a79a43dee89d3a985bd29e65767c6959fb3636611a5b652ccecea48ffc18d717510b0cbb3ef27ac26a662c618bc8a08c960b5cbacffc9c4b83353210691ea456d295fb9b371b79c203efa6d922fc9124c7b0a7d944fc02463b9fa4626a4ef2173d1153bde00013f85df7865e4b9922ba94ba5ba4fab5eb90d7b7a12fbe219b330fcf28af592e316c28874274b9ae266600cb67d827e108a4066f964d64f1ec4fb3f34cf6edf66f062161c8518ec2dd3a5482b1b73c020a07a4afba68c1e4805d748211e3fbed5b374026b93bff2fd4663963b89a50892beeb75f15fbd26ab67d3dc5b220cc58d8833a34644bc68f43d07cecea718d76a52d8def8b4a5eed3100f3fb1aa774e66901f7b6bbaa9b4a96a535f9183f65dfe2d2b49e107</script>  <div class="hbe hbe-content">    <div class="hbe hbe-input hbe-input-default">      <input class="hbe hbe-input-field hbe-input-field-default" type="password" id="hbePass">      <label class="hbe hbe-input-label hbe-input-label-default" for="hbePass">        <span class="hbe hbe-input-label-content hbe-input-label-content-default">Hey, password is required here.</span>      </label>    </div>  </div></div><script data-pjax src="/record/lib/hbe.js"></script><link href="/record/css/hbe.style.css" rel="stylesheet" type="text/css">]]></content>
+      
+      
+      <categories>
+          
+          <category> 生活 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>生命</title>
+      <link href="/record/2019/03/04/%E7%94%9F%E5%91%BD/"/>
+      <url>/record/2019/03/04/%E7%94%9F%E5%91%BD/</url>
+      
+        <content type="html"><![CDATA[<div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="OOPS, these decrypted content may changed, but you can still have a look.">  <script id="hbeData" type="hbeData" data-hmacdigest="8279ea83c15aed75f7905835053c8bfdf4356b065db8dea779c2d00def99cca5">73ec4e90604b298de70b40cddedb7a1361b462f307d9ce1a3289179ffa3c1997f4bfda2301db86772c45003b4cdb6865140952db335a0100542a3bf0a165f54aaece6088a32edae6e12dae5ae9d23be86d86b7a53cf26fd0596f248b3e5ff21c68f59f4061de28e5a07f062629bd0a027b563b9bec7912ea9f05f1f3cea0f9a647d7f156ab744f3830535d34e974cf0d43471fd4b139c55d6a84b4f016dea04f425dd0adf094ac3004eac2668ad4279cdd6e34094c6d0bdeff32e930ce4861a4b7d3a448f89df1812ebe3c36261bd7e79bb44b1613ed1319aa30c24ab14bc6803e8afb5ab957aa6e6c51d48c6d056e8e8ab5246556ab44e7eafc772338d285176c4f287b9b5aa252c1faa8f850f1bbe740a80a613649d4f96dd9202be3bff2dc1b22bb845f53e3d70896270632971f46496caa1150ac8280abe450023b0fb0325079c0ee38cf334f96e5e0d870faad18a70873e8d10a2ade87285c78755bde36bcf2a8c22d9dd531f64dc2792deb9588ae9e1d463126c10545ecedc5de741be5e2966ac9a0ee9de15379bb55fc97efa7a3053839fb9c2c36464d65c705ff723fc6460004bea0df2d8ee38b9928b333eceebdabcfe330cfd8a1f92ecf77422e3ccf230a7ce9e54e8636c7ad49cd08e181ce9ef5977a887cff77ca9bcc4e9088970218f0bec6c5e5051c628e6ca691d35c63d53df172a91692233ab2b953eec1777da6c633392afcd4c990737e14cbe40829bc94af47bbc527260013f7aa187eb9008152e42c8fb93a6b44898f52ae999250ea13ac22dd7cb552e003101dc13cf407763b6db5c4b49e9231d55a0e0f798c8ab0f9270c6a43269507100270b008079b162de2baa36236e441157b0e9fe80328d162239bcc1f8abd03bd68ff0cfdf8c782994aeb0a6482747c469f9ec048f373d8172b78b232b59012fb2e048baf4dfc98328b36f086f723cedee9918930de3ec0df5c2f42eb480add5b64337bd17d3a1ee5c8625afc8d203ebac35f16667beb964a890bf149aded2716237a96915d66a35493f9af42be80462d568e314a783c71b8533babdb4f444f444dd803741a1db4cd01693992314376c8db52ff240a265858e1e469dd67d255e5c63ea25bbe25c8d42d625c929f76006ba8f698e7674bdbb757545f960b2455bb36f8d78331a34f8108a7e6e460f73d2ccc0c7a9529b51aec49f90926c6cd33d214c44f1c755655efbc5066ab7f383c9401fed6a44d6467fe3f06f7ebb291191ce099830b2fa6a4bdeb549915ddc8b58350daf599b3abd69f70bb5712f552fcc2849acbb9a7390396d53dbe9a3519253f7c9bdca27cca8389b0d79ce3c615e095a8b772e4575e4bfa2478b0dab268c02603462104c96c22f126aa79ab43a4a07af2b2ab980cfde5403c49ea8f2b6bc9d0770342289a8c7ed9e2998da5ac8f794410177f1a94ceb93e976bbfae46a1a2b8949f6662fae196a19351892c72942d6e49013c18a99d64ce5414b5ee55beeff0ee16acf7064ec1a19f33341ffe996edafc5fbb1aa15c555bfba0240ab21caced4788b5e9cbd68e1a9f458adb55d25eb4391feb95f208caf9e5451ba5ed52572067eec8cc02799dcfa412281034d8cb55b35354654543db26681173db895fdad6016ea284609bec7321e2fae0ffb692f8d93249b55552174db770e6ddaa819df405d4a7005cdcb17b91fbf53431c65a9e507443b0e4ccac145e81d4d005a8010d8bf49198c612bcf7c2e6c90d95ca6f57139c634a4c1b6810bd4f3cd134fedacdd06e6512094daf5762190be9785b1ef78910d89f164c0c735a0171d8bc862edb751055b8fe2fad85f600d97e145e7294f7c7bd1d2317b399e8f4e65c3245a8dc2befc43ea3ef16a640734cfa41af882e895ffc3e6ceb29340334e6bf6e8949b40972261d86b34ab99f0d7e104365947bac78b0f68c8d29f1dce83a8ff73a61c28b6fe09fda629c684877175a719c2e0f98db4bcfe895e1e7dd6b97acfb9cacf892bf9d08a7fd5a813bd72b5476cd1e51d72a1c408b595f186b5b86586e126eeb3b1c8e773cab0458cdc5278047a2bb6a76374508a9043a9f0e509f3203e4867cad9c757d402cac2d7755d67a2ba503f0b1b6a33fe4a03f74a8fa69932cc99316f4d207386c3acee9eb25bf678a247fef8748c27bb4c45eef7140c0a19caac8a809f0ac87866b7e0c3e770acf079267f811ebf815df5bc35772a9ae19affd7daef2d3e0c95f70af6a4e9ed227f4ee7794a1eaacf6ea63d8e6fa3d72cd249d803a6fa1be4fbdc550fe6031fde4183f1b7dccac4bb7779eea43f86cc099ee457e70352c17d2afd467c2d692a16f85b7282905552839f03bba5a6f749d2df3c15f15190bff093deedcac2dcfdf7a004fc58e3c122848a0402b2956f92991764d681af041f2f171ff7c8204a0057fe3d8ee0112cb0b7bd366d3f36d39cadda9bfb782baa1a107fab79256f5c21d924e461e40f3ecfb493385566cc110391b9a8d3dc354e72022960114718cbd7ed7ff5b6110b7aa4dbd2f785e315fea4480bf7c54388d40f6401d75993cf1d0b8aded2985400dffd24579755dfe7d654cf3d25a03ebbf4ee684eb884899265ba6d1de2ffc075e78ecc9f660834ca4b203ddabe57b22cebf741ca129f6592835de2d87b53ff2aa025fa58dd9b0df616efbea5ba020a7417a11ff06e8ae2cbf25010138bb0df594b94079557c2745b7c427bb5918cbf108d4ecf34cefea8d982e875ba3bce55042bc9dfa956398db7734816c605248f23b40bae40e7817d7e6d9dd929ab9f89414a19cfeda8cfbaf4c9ee3a54be9fb90577518f03e94c2b6303f14cc8d3298ccc18edb510a04a71f69cd838f4c895c3cc98500abe1fb643136f43fca94c3778fb2d0dc51b697bd7de88b825e139712dab3f4ea8268e1f40c474bb6caabe9c55cf175ae75018d15e470156007c0f29b9e1cb0c9a600084a9cd14c3257417b284b4f63e32e44a0a95ecbd2bd955ce461c2b57868659d5d9b7b6e984f814f5cbe792bcf15fd3d543ff8ecd060e126c95c949ff0fc50dd70904e02cd6d91f7d9a61e382ff3ac8456673a816b6f7848c60316b217c6178cf8e77c9d1c6c0b30b3ecf60aaccbad55781393987fc041c2cfd14884f03a42220ac325e6a30861125ad32b429b29fbefc6f02274e5b83e15be3c39c7eb5fc61f1d673b2fe598dc83ae5e563495236986c30182267451866e4dcf5867249d71da1a673fdaa35d8539db8d30a24e6330bf9118ccd9653ddf8669bd1260ce014c70657261493fc0c3bdbeaf1c83c544822e8809dc1a77136c588bef6b2fd08bf50b0efbe0e39810279db0bccf467b5e5a941e53e2468d218bc948356058c25bfc8e23fc6572ff17864aecb544a585c2639508f122a0a3d0c0b2787f1f916378c6fdc1ae04e6a0e6a1fe5547eb739bda7f3092c0655e780d222598870309142cd3f35de446294e111e8d96ad62e895e041eff824bce5e367bf45cc16986693eeb6d6af1b65e0fe2cf14606e0609587cc37d00822194a288f062ea6362f31db368f0ff9659647cf51366bf7603271c0bde797192418c076a658cd711822c3747615a22f1dc3459bb61e2065f250db8d3473de7be1daf849e648a94fb7c6a5ddfa2d45ea042880f312abad10de7ec19bec33352c0edf989197dda50caf859664da27e6a39d9c9abb79bd2fedd1ec75133744a827103b3723206e74746dcf9a1b14c616da8dad4d01e4b9aa7aa2d695f9fd2aca8f39c5c7f78fb533ecc353d0e0097a5b58042f41fd22125cd49e7c47389ddc1cbda1bf9362018b20fa1ca49df53dcfaafd78a715df67bd1792fe724024a004c6bad79bdb2f2a50f1fdd2b182a239882ab9d9e97b214a83662dbc4cd98d2b1d125f5653c5f19f767c78fda0864caeb16bf74bee00ba7e1a518060a25f8db8134c0394b12791709a94ab1fde2ebf97e2cd1012bac96f5536fce095941180ca20905ed3e7a6124c84cc94e05504def508c8baa61b401e9d8e23d65d43624fc5620adbedab131b9627daf10e1b49520bee9452c6bcd320060a738bade4f74aa7869fa1dde210241bf9446b2b0934f403b3e3c433bdd4fed037f3545e054fd300823022a5c2ee6ed4595be7d84b7564dc853fab86cd9c795b2c87b9374f27fe2e7619a303524f1a1ad48db6176aeb5f9a72901aeb0aa9daafc37a55e690afcf8b6877242a86df732a6676f2e0392804514334f359c9499dbb987c43c13ecc7174f8dbb381b26151f4ab29935d47340cf0dc423400f83f51e3c954806c2b0400c87378a4a3451d2b99ae0994f0fbc7a0ec7ba58d9ffa9c11a8252f25cc0f8b3b5fa9d15c2a096eb7c9c9dd9cd34ddc2949478da84c5a6cafccf5c06bc6bfe7f2b6ecb3a166e9d4c8b77c38ba7d0dc679dea071ff791e950ca651dd775305be8e94b08c61acff00bfd1ef168e947fa3dd0d54dff638fcd3ce5f4185be87efa49fa91b022f62a7f781e465b145fbb0dc55025f04c3668c15b364f660284eb735771cdae0aebbc993d42413b867018c1571a19ffb9728b938fcd4b089301b96a442e4d1bb7914c9ebc4e289894bee1cf0aec19b2c7c587c6d5d782a0113a35731cf43f72f01130b1fe125842aa8d9ec9b8d82f62bca2b24d8539b92e57a090b9744271f7b68fc87eb843822d75a4ff8263f62b69286901d0f81bc781bc9e74388de652f12af5e14c6b7fcef6e4eb7e3c4fd111d846d27c88de69d24da9c9773bb104e83172ba15dfd911aec96b67e9b518b0e9d8ac33d5774e006fac2b9a11d1b98f92792ec500c6f9846acf7608044ba34551973ea344ec5936efedd18580c89147b66190bcd31a811eb571f50c2e260f98980d96ac377a478e3a1d0c1b3385b78179f58e1469e68acd42bf3bd23f1d998564da0516893e67b3b4c6882413b42b3beda5165b6b7f42bf7f010f50869cdc1ad8da7</script>  <div class="hbe hbe-content">    <div class="hbe hbe-input hbe-input-default">      <input class="hbe hbe-input-field hbe-input-field-default" type="password" id="hbePass">      <label class="hbe hbe-input-label hbe-input-label-default" for="hbePass">        <span class="hbe hbe-input-label-content hbe-input-label-content-default">Hey, password is required here.</span>      </label>    </div>  </div></div><script data-pjax src="/record/lib/hbe.js"></script><link href="/record/css/hbe.style.css" rel="stylesheet" type="text/css">]]></content>
+      
+      
+      <categories>
+          
+          <category> 生活 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>妹妹</title>
+      <link href="/record/2018/09/24/%E5%A6%B9%E5%A6%B9/"/>
+      <url>/record/2018/09/24/%E5%A6%B9%E5%A6%B9/</url>
+      
+        <content type="html"><![CDATA[<div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="OOPS, these decrypted content may changed, but you can still have a look.">  <script id="hbeData" type="hbeData" data-hmacdigest="e561a7601decb7cc10a862bc8233e4acef8c77423b95135a56efc62f8a20384c">73ec4e90604b298de70b40cddedb7a1361b462f307d9ce1a3289179ffa3c19975f713dcf86804018fe356ce723d18369f0c244396ef1d41792e74b7dfab40c66dfc711d3878f92016c04338150ebb60040574dd50c29183b562c6b646c996ebb9b5657a6a2e82b374aedcbd781335780aad0e110e6b0e88ddc991798dbec02e575b2ff42ae6181c2bf8c8ac89a8a7ec69371189434e585b566b3369b7d5ad8ef1e5c2a5fce546685a45e31622c82badcbb8572c4f845f9266a827173de5bbe52411502d72d4dc8fea7029e0ba9d608648ad3ab8ee4ec5ff7515322aba9ed46ea0062a81d1cd9dcb09fce12a3214145531f32b523f9f015168e6e68815dd175dc99cec87d7d07c8a1acd4d7b57f8a0b0f4d6fb64cbf5cb24981d5eeee5c9329f7ccd17b70061b08fcffbc5e06da6a921124a0b303dce8a939a6c999e95bf8230fdd8a1395cc1a86ab530157e540fdbfb37b3b1b67b9780ab2d14cfeddfa78fb5561f1b7b539216b514e59575555d9a7fb8aa7e5d62460ceab5cfbd519b38f331750e00379e41087fcde6f152db5ba94d5298800f53cb24ea2d3626304ea205510088ac36b37d602d9a2de33dd28499bb63746b2086342452a4207cf5a91c138140a102e78374cec40a9b580295f1145c4e3272a583b8dbacc18e6b5cfc3f70ee14d6a4ad7d9ad5c5ca138d5585cfde06840ee6c17bf6735397a7ed59b7017012c5bcf557545ead381d9f0b280e59b3c52b3e10fcff2364ce2619f036a94adf6f565375852cbb8cfa34a0bcf2bc79b2ee61fc0e15eb5885667cabfe024c9f3dce6e26a20b01386a2f73d9dfa90cc0580baa8129dae9b6d9f40a961ca2ccc4c146f9c825a5e1982bd4d299332ef3863715d3de8530886bb71ae592bb10dcc9076cd263f732a7b704a853e74dc704a37e8e765e3877a475e8be34668d2fe6e14a2ba6c8c884ceff6c6cf19dacf21ddb0d919c3e4b7f9042bf44fff3d0fe2a3989597fe29fe0cbf6ce35ac9099c6858208b545f91d0d9070aa16362e61faefd2b2388f07904ab8fff5d71d6d75d031dee6827fd278e0d92b6ae2ce11e7a44a304172f3d84e9c58ccc7d57657bfacd796f62d3be599dcab4144028b6ab8c481f30510c594ed6256e0f4630941ab6a518cd381f2502f931f279f0f4ebfee592cf703edd8ec4bb3064b44c66b1e831d1e54340bb9052640739df13fcb37167a4329e0c8179291022ac026610a9e341e20e0b60eee1774869f74e7f764440fa530cb77726798c59825a1b3c947c2f4ed14b549b35fb81510965f5494b255952931de980c025f6a4aa049338a4d30cc0e7ef4575bc9eb495c9ffd4ac5ed6dd84bfd49d21c95cafcae8b10de73b62ec97275776ee7f11ab4d516537ac927edf0badd29792ab6e5535ed083ddbc9c5da2d00b4ed602b58d3d2a5944ad9184c7288213dc5ebbeca66f9ed9a554ba89fc020e4c67627d85ddc00c5e528bff976f9891e38d796e60af0a5c58627d90eaa6a0b26d97040632c87eb61928cb6d5d742b9bd335e4ffeb87f500338d59d0d64b2a8a4131b5e78eedbf6f236b6714ff31e9f7adf047c28a0792c0db01ca2d3da301bb90fdb40709b39618e4bdb471e64ca6f1445a0c27758733591ec4453acfa0d8d5e896f531854bb840009c55b8760da6214550f617ecd64fb1f03f7ad16cbc095ff7462b7eaa0879be505907d60c36f5111372543f5df2ce8b3aecb12d7345d3bfc738d732e34dce183268afb709c28bb7f3c01350808a9e44ebbd25350337cb3f4d057739c4fc2514705f2f9807be9536ebdd4fc8eda6d14291bee4a2820a7153109b1260adb524ae3328d73527d7ea15ae2aa3de470470c5455dfc158651afa288d3956896195827451e77822365861a19f1f1a9a5066ceb65e1e8537def51397cea8940fbf4b80cada9a3943e2bee69aa478024c13336270dc35a8195c15f4d2b75684e5333e553e2cda57ef125b93ba790f1d1c035bc2c78a27e04fbd9cfdac88261f858634d2fada257057c2019ab948e161c58ae78b6dbf5c33afd696f497a3d4862ee035210278466840858c8ea11893044d3be5b63e37d435228d91df1e474711f1bf1367c82f13c901b9ca99508d13c2017945adfdb9595fb3f95237cc033e300496b13490a047d792f4b461c68e96d6647e6f74bffc30376a30ced3f7988682bfe6d10c95b6c4d6bd97b0b34be1b775c22859dd7aa6919bb5ccb08373bd3513af42710e6db86b2b757131386e71c49c258b2ee1637b76d1dc5db35bc1b6297ce04c0ee98717a81e82b143a1a2a27c80dfe72f683267af3aa1388379c04b678351c25b4f2fdd3c655a3fba6b1c309bbb12f6ba877507223c7357e85b0140943a5b37d837892339c23ee566fb43326dd880</script>  <div class="hbe hbe-content">    <div class="hbe hbe-input hbe-input-default">      <input class="hbe hbe-input-field hbe-input-field-default" type="password" id="hbePass">      <label class="hbe hbe-input-label hbe-input-label-default" for="hbePass">        <span class="hbe hbe-input-label-content hbe-input-label-content-default">Hey, password is required here.</span>      </label>    </div>  </div></div><script data-pjax src="/record/lib/hbe.js"></script><link href="/record/css/hbe.style.css" rel="stylesheet" type="text/css">]]></content>
+      
+      
+      <categories>
+          
+          <category> 生活 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+  
+  
+</search>
