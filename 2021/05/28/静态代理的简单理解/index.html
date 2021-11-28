@@ -1,99 +1,297 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang=en>
 <head>
-    <meta charset="UTF-8">
+    <!-- so meta -->
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="renderer" content="webkit">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="google-site-verification" content="TZE0rZyIqLl10trYu3BWBWa1Vmz6HFwhb2OcNEK4u-s" />
-     <link rel="shortcut icon" href= /img/favicon.ico >
-    <title>
-        dianedii`blog
-    </title>
-    <meta name="description" content= dianedii`home >
-    <meta name="keywords" content= Blog >
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657&#x2F;&#x2F;静态代理的一个简易理解实现，场景是dianedii结婚找了加婚庆公司...&#x2F;&#x2F;“婚庆公司”协助“我”实现“结婚”动作public class StaticProxy &amp;#123;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="静态代理的简单理解">
+<meta property="og:url" content="https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/index.html">
+<meta property="og:site_name" content="dianedii&#96;blog">
+<meta property="og:description" content="123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657&#x2F;&#x2F;静态代理的一个简易理解实现，场景是dianedii结婚找了加婚庆公司...&#x2F;&#x2F;“婚庆公司”协助“我”实现“结婚”动作public class StaticProxy &amp;#123;">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-05-28T14:17:14.000Z">
+<meta property="article:modified_time" content="2021-06-18T14:59:00.000Z">
+<meta property="article:author" content="戴安">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
     
-<link rel="stylesheet" href="/record/libs/highlight/styles/monokai-sublime.css">
-
     
-<link rel="stylesheet" href="/record/libs/font-awesome/css/font-awesome.min.css">
-
+      
+        
+          <link rel="shortcut icon" href="/record/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/record/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/record/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>静态代理的简单理解</title>
+    <!-- styles -->
     
 <link rel="stylesheet" href="/record/css/style.css">
 
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
 <meta name="generator" content="Hexo 5.4.0"></head>
-<body id="bodyx">
-    <div class="hd posts">
-    <a href="/index.html"><i class="fa fa-home
- replay-btn" aria-hidden="true"></i></a>
-    <div class="post-title">
-        <p>
-            静态代理的简单理解
-        </p>
-        <hr>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/projects_url">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/record/2021/06/15/ssn0008/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/record/2021/05/20/ssn0007/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&text=静态代理的简单理解"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&is_video=false&description=静态代理的简单理解"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=静态代理的简单理解&body=Check out this article: https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&name=静态代理的简单理解&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&t=静态代理的简单理解"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
     </div>
-    <div class="post-content">
-        <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">//静态代理的一个简易理解实现，场景是dianedii结婚找了加婚庆公司...</span><br><span class="line"></span><br><span class="line">//“婚庆公司”协助“我”实现“结婚”动作</span><br><span class="line">public class StaticProxy &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        MarryCompany marryCompany = new MarryCompany(new Person(&quot;你&quot;));</span><br><span class="line">        marryCompany.HappyMarry();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚主角</span><br><span class="line">class Person implements Marry</span><br><span class="line">&#123;</span><br><span class="line">    public String name;</span><br><span class="line"></span><br><span class="line">    public Person(String name) &#123;</span><br><span class="line">        this.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        System.out.println(name+&quot;要结婚啦!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚动作</span><br><span class="line">interface Marry&#123;</span><br><span class="line">    public void HappyMarry();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//婚庆公司</span><br><span class="line">class MarryCompany implements Marry&#123;</span><br><span class="line">    Marry target;</span><br><span class="line">    public void before()&#123;</span><br><span class="line">        System.out.println(&quot;结婚前筹措婚礼&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void after()&#123;</span><br><span class="line">        System.out.println(&quot;结婚后蜜月规划&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public MarryCompany(Marry target) &#123;</span><br><span class="line">        this.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        before();</span><br><span class="line">        this.target.HappyMarry();</span><br><span class="line">        after();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//输出：</span><br><span class="line">//结婚前筹措婚礼</span><br><span class="line">//你要结婚啦</span><br><span class="line">//结婚后蜜月规划</span><br><span class="line"></span><br><span class="line">//总结：</span><br><span class="line">//假如说Person类中是本来的实现，那么用静态代理的方式就可以在不修改之前代码的情况下，对其功能进行增强。</span><br></pre></td></tr></table></figure>
+    <div id="toc">
+      
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        静态代理的简单理解
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">戴安</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-05-28T14:17:14.000Z" itemprop="datePublished">2021-05-28</time>
+        
+      
     </div>
 
-    
-        <hr class="fhr">
-        <div id="vcomments"></div>
-    
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/record/categories/%E6%8A%80%E6%9C%AF/">技术</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/record/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">//静态代理的一个简易理解实现，场景是dianedii结婚找了加婚庆公司...</span><br><span class="line"></span><br><span class="line">//“婚庆公司”协助“我”实现“结婚”动作</span><br><span class="line">public class StaticProxy &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        MarryCompany marryCompany = new MarryCompany(new Person(&quot;你&quot;));</span><br><span class="line">        marryCompany.HappyMarry();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚主角</span><br><span class="line">class Person implements Marry</span><br><span class="line">&#123;</span><br><span class="line">    public String name;</span><br><span class="line"></span><br><span class="line">    public Person(String name) &#123;</span><br><span class="line">        this.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        System.out.println(name+&quot;要结婚啦!&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//结婚动作</span><br><span class="line">interface Marry&#123;</span><br><span class="line">    public void HappyMarry();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">//婚庆公司</span><br><span class="line">class MarryCompany implements Marry&#123;</span><br><span class="line">    Marry target;</span><br><span class="line">    public void before()&#123;</span><br><span class="line">        System.out.println(&quot;结婚前筹措婚礼&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void after()&#123;</span><br><span class="line">        System.out.println(&quot;结婚后蜜月规划&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public MarryCompany(Marry target) &#123;</span><br><span class="line">        this.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void HappyMarry() &#123;</span><br><span class="line">        before();</span><br><span class="line">        this.target.HappyMarry();</span><br><span class="line">        after();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">//输出：</span><br><span class="line">//结婚前筹措婚礼</span><br><span class="line">//你要结婚啦</span><br><span class="line">//结婚后蜜月规划</span><br><span class="line"></span><br><span class="line">//总结：</span><br><span class="line">//假如说Person类中是本来的实现，那么用静态代理的方式就可以在不修改之前代码的情况下，对其功能进行增强。</span><br></pre></td></tr></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/record/">Home</a></li>
+         
+          <li><a href="/record/about/">About</a></li>
+         
+          <li><a href="/record/archives/">Writing</a></li>
+         
+          <li><a href="/record/projects_url">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&text=静态代理的简单理解"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&is_video=false&description=静态代理的简单理解"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=静态代理的简单理解&body=Check out this article: https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&title=静态代理的简单理解"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&name=静态代理的简单理解&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2021/05/28/%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E7%9A%84%E7%AE%80%E5%8D%95%E7%90%86%E8%A7%A3/&t=静态代理的简单理解"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
 </div>
-    <div class="footer" id="footer">
-    <p><h4>Copyright © 2020 | Author: dianedii | Theme By <a class="theme-author" target="_blank" rel="noopener" href="https://github.com/Xunzhuo/hexo-theme-coder" style="font-size:14px; color: #969696">Coder</a></h4>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
     
-        <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-        <span id="busuanzi_container_site_pv">Page Views: <span id="busuanzi_value_site_pv"></span></span>
-        <span class="post-meta-divider">|</span>
-        <span id="busuanzi_container_site_uv">Unique Visitors: <span id="busuanzi_value_site_uv"></span></span>
     
-    <label class="el-switch el-switch-blue el-switch-sm" style="vertical-align: sub;">
-        <input type="checkbox" name="switch" id="update_style">
-        <span class="el-switch-style"></span>
-    </label>
+    2018-2021
+    戴安
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/projects_url">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
 
-    <!--         <script type="text/javascript">
-    var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");
-    document.write(unescape("%3Cspan id='cnzz_stat_icon_1278548644'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "v1.cnzz.com/stat.php%3Fid%3D1278548644%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));
-    </script> -->
-</p>
-</div>
-
-<input type="hidden" id="web_style" value="black">
-<input type="hidden" id="valine_appid" value="">
-<input type="hidden" id="valine_appKey" value="">
-
-<script src="/record/libs/jquery.min.js"></script>
+    </div>
+    <!-- styles -->
 
 
-<script src="/record/libs/highlight/highlight.pack.js"></script>
 
-<script src='//cdn.jsdelivr.net/npm/valine@1.3.10/dist/Valine.min.js'></script>
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
 
-<script src="/record/js/js.js"></script>
 
-<style type="text/css">
-.v * {
-color: #698fca;
-}
-.v .vlist .vcard .vhead .vsys {
-color: #3a3e4a;
-}
-.v .vlist .vcard .vh .vmeta .vat {
-color: #638fd5;
-}
-.v .vlist .vcard .vhead .vnick {
-color: #6ba1ff;
-}
-.v a {
-color: #8696b1;
-}
-.v .vlist .vcard .vhead .vnick:hover {
-color: #669bfc;
-}
-</style>
-    <script type="text/javascript" color="173,174,173" opacity='1' zIndex="-2" count="99" src="//cdn.bootcss.com/canvas-nest.js/1.0.0/canvas-nest.min.js"></script>
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/record/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
 </body>
 </html>
