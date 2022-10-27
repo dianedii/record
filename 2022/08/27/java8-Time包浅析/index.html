@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Java8 Time包浅析 本文时对Java8 Time包中做一个简单的解析，适用于对Time包不甚了解&#x2F;快速上手的人。  1. 从api上理解   包 说明    java.time 核心时间类   java.time.chrono 其他地方的纪年法   java.time.format 时间格式化相关的类   java.time.temporal 定义时间的基础接口   java.time.z">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java8 Time包浅析">
+<meta property="og:url" content="https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/index.html">
+<meta property="og:site_name" content="dianedii&#96;blog">
+<meta property="og:description" content="Java8 Time包浅析 本文时对Java8 Time包中做一个简单的解析，适用于对Time包不甚了解&#x2F;快速上手的人。  1. 从api上理解   包 说明    java.time 核心时间类   java.time.chrono 其他地方的纪年法   java.time.format 时间格式化相关的类   java.time.temporal 定义时间的基础接口   java.time.z">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://github.com/dianedii/picBed/blob/main/20210117101208962.png?raw=true">
+<meta property="article:published_time" content="2022-08-27T09:32:02.000Z">
+<meta property="article:modified_time" content="2022-10-27T13:04:49.671Z">
+<meta property="article:author" content="戴安">
+<meta property="article:tag" content="Time">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/dianedii/picBed/blob/main/20210117101208962.png?raw=true">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/record/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/record/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/record/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Java8 Time包浅析</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/record/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/record/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&text=Java8 Time包浅析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&is_video=false&description=Java8 Time包浅析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Java8 Time包浅析&body=Check out this article: https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&name=Java8 Time包浅析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&t=Java8 Time包浅析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#Java8-Time%E5%8C%85%E6%B5%85%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">Java8 Time包浅析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E4%BB%8Eapi%E4%B8%8A%E7%90%86%E8%A7%A3"><span class="toc-number">1.1.</span> <span class="toc-text">1. 从api上理解</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%85%B7%E4%BD%93%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.2.</span> <span class="toc-text">2. 具体使用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2-1-%E5%88%9B%E5%BB%BA%E6%97%B6%E9%97%B4%E5%8F%8A%E6%9F%A5%E8%AF%A2"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 创建时间及查询</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-2-%E6%97%B6%E9%97%B4%E6%AF%94%E8%BE%83"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 时间比较</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-3-%E6%97%B6%E9%97%B4%E8%BD%AC%E5%8C%96"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 时间转化</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-4-%E6%97%B6%E9%97%B4%E8%B0%83%E6%95%B4"><span class="toc-number">1.2.4.</span> <span class="toc-text">2.4 时间调整</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Java8 Time包浅析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">戴安</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-08-27T09:32:02.000Z" itemprop="datePublished">2022-08-27</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/record/categories/%E6%8A%80%E6%9C%AF/">技术</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/record/tags/Time/" rel="tag">Time</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h3 id="Java8-Time包浅析"><a href="#Java8-Time包浅析" class="headerlink" title="Java8 Time包浅析"></a>Java8 Time包浅析</h3><ul>
+<li>本文时对Java8 Time包中做一个简单的解析，适用于对Time包不甚了解/快速上手的人。</li>
+</ul>
+<h4 id="1-从api上理解"><a href="#1-从api上理解" class="headerlink" title="1. 从api上理解"></a>1. 从api上理解</h4><table>
+<thead>
+<tr>
+<th>包</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>java.time</code></td>
+<td>核心时间类</td>
+</tr>
+<tr>
+<td><code>java.time.chrono</code></td>
+<td>其他地方的纪年法</td>
+</tr>
+<tr>
+<td><code>java.time.format</code></td>
+<td>时间格式化相关的类</td>
+</tr>
+<tr>
+<td><code>java.time.temporal</code></td>
+<td>定义时间的基础接口</td>
+</tr>
+<tr>
+<td><code>java.time.zone</code></td>
+<td>时区相关的类</td>
+</tr>
+</tbody></table>
+<ul>
+<li>基类：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Duration</code></td>
+<td>表示持续时间，从一个时间点持续到另一个时间点，比如：数据结构课从<code>8:00</code>上到<code>10:00</code></td>
+</tr>
+<tr>
+<td><code>Instant</code></td>
+<td>时间点</td>
+</tr>
+<tr>
+<td><code>LocalDate</code></td>
+<td>本地日期，默认时区，精确到日</td>
+</tr>
+<tr>
+<td><code>LocalTime</code></td>
+<td>本地时间，默认时区，精确到秒</td>
+</tr>
+<tr>
+<td><code>LocalDateTime</code></td>
+<td>本地日期时间，默认时区，上二者相加</td>
+</tr>
+<tr>
+<td><code>MonthDay</code></td>
+<td>月份中的日期，不存年， 例如：<code>12</code>月<code>3</code>日</td>
+</tr>
+<tr>
+<td><code>OffsetDateTime</code></td>
+<td>在<code>ISO-8601</code>日历系统中的<code>UTC</code> /格林威治偏移的日期时间，如<code>2007-12-03T10:15:30+01:00</code>。      旨在使用<code>ZonedDateTime</code>或<code>Instant</code>在较简单的应用中对数据进行建模。 当更详细地建模日期时间概念时，或者当与数据库或网络协议进行通信时，可以使用此类。</td>
+</tr>
+<tr>
+<td><code>OffsetTime</code></td>
+<td>同上，但仅是时间：如<code>10:15:30+01:00</code></td>
+</tr>
+<tr>
+<td><code>Period</code></td>
+<td>表示时间段，最小单位是天，开始结束时间点不确定，比如：国庆放7天假</td>
+</tr>
+<tr>
+<td><code>Year</code></td>
+<td>年</td>
+</tr>
+<tr>
+<td><code>YearMonth</code></td>
+<td>一年中的月，不存日， 例如：<code>2022</code>年<code>3</code>月</td>
+</tr>
+<tr>
+<td><code>ZonedDateTime</code></td>
+<td>时区的日期时间，精度为纳秒，</td>
+</tr>
+<tr>
+<td><code>ZoneId</code></td>
+<td>时区<code>ID</code>，比如<code>Asia/Shanghai</code></td>
+</tr>
+<tr>
+<td><code>DayOfWeek</code></td>
+<td>一周的天，枚举类</td>
+</tr>
+<tr>
+<td><code>Month</code></td>
+<td>月，枚举类</td>
+</tr>
+<tr>
+<td>DateTimeFormatter`</td>
+<td>日期格式化</td>
+</tr>
+</tbody></table>
+<h4 id="2-具体使用场景"><a href="#2-具体使用场景" class="headerlink" title="2. 具体使用场景"></a>2. 具体使用场景</h4><h5 id="2-1-创建时间及查询"><a href="#2-1-创建时间及查询" class="headerlink" title="2.1 创建时间及查询"></a>2.1 创建时间及查询</h5><ul>
+<li>创建年月日</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">LocalDate now = LocalDate.now();</span><br><span class="line"><span class="comment">//2022-10-27</span></span><br><span class="line">LocalDate birthday = LocalDate.of(<span class="number">2008</span>,<span class="number">8</span>,<span class="number">12</span>);</span><br><span class="line"><span class="comment">//2008-05-12</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建时分秒</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">LocalTime nowTime = LocalTime.now();</span><br><span class="line"><span class="comment">//10:55:02.057948</span></span><br><span class="line">LocalTime workTime = LocalTime.of(<span class="number">8</span>,<span class="number">30</span>);</span><br><span class="line"><span class="comment">//08:30</span></span><br><span class="line">LocalTime lunchTime = LocalTime.of(<span class="number">12</span>,<span class="number">1</span>,<span class="number">21</span>,<span class="number">999999</span>);</span><br><span class="line"><span class="comment">//12:01:21.000999999</span></span><br><span class="line"><span class="comment">//ps:最后一位单位为纳秒，九位小数</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建完整体</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">LocalDateTime nowDateTime = LocalDateTime.now();</span><br><span class="line"><span class="comment">//2022-10-27T11:15:35.839724</span></span><br><span class="line">LocalDateTime cakeTime = LocalDateTime.of(birthday,lunchTime);</span><br><span class="line"><span class="comment">//2008-08-12T12:01:21.000999999</span></span><br><span class="line">LocalDateTime supperTime = LocalDateTime.of(<span class="number">2022</span>,<span class="number">10</span>,<span class="number">27</span>,<span class="number">13</span>,<span class="number">10</span>,<span class="number">10</span>,<span class="number">1</span>);</span><br><span class="line"><span class="comment">//2022-10-27T13:10:10.000000001</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>查询</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//可以查的非常细致，这里举例几个常用的</span></span><br><span class="line">nowDateTime.getDayOfMonth();</span><br><span class="line">nowDateTime.getDayOfWeek();</span><br><span class="line">nowDateTime.getYear();</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-2-时间比较"><a href="#2-2-时间比较" class="headerlink" title="2.2 时间比较"></a>2.2 时间比较</h5><ul>
+<li>相同格式时间比较</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">now.isAfter(birthday);</span><br><span class="line"><span class="comment">//true</span></span><br><span class="line">LocalTime workTime1 = LocalTime.of(<span class="number">8</span>,<span class="number">30</span>);</span><br><span class="line">workTime.equals(workTime1);</span><br><span class="line"><span class="comment">//true</span></span><br><span class="line">nowDateTime.isBefore(cakeTime);</span><br><span class="line"><span class="comment">//false</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>不同格式时间转化比较</p>
+<p><code>LocalDate</code>/<code>LocalTime</code>/<code>LocalDateTime</code>三者不能相互直接比较。<br>其中<code>LocalDateTime</code>可以通过<code>toLocalDate()</code>/<code>toLocalTime()</code>进行转化再进行比较。</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nowDateTime.isAfter(ChronoLocalDateTime.from(now));</span><br><span class="line"><span class="comment">//Error</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>与1.7用的时间<code>java.util.Date</code>进行比较</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Calendar calendar = Calendar.getInstance();</span><br><span class="line">Date nowOldDate = calendar.getTime();</span><br><span class="line"><span class="comment">//Thu Oct 27 14:44:25 CST 2022</span></span><br><span class="line"><span class="comment">//需要将nowOldDate转化为LocalDateTime才能比</span></span><br><span class="line">Instant startTime = nowOldDate.toInstant();</span><br><span class="line">ZoneId zoneId = ZoneId.systemDefault();</span><br><span class="line">LocalDateTime nowNewDate = LocalDateTime.ofInstant(startTime, zoneId);</span><br><span class="line"><span class="comment">//2022-10-27T14:47:56.468</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="2-3-时间转化"><a href="#2-3-时间转化" class="headerlink" title="2.3 时间转化"></a>2.3 时间转化</h5><ul>
+<li><p>本包内互转</p>
+<ul>
+<li><p><code>ZonedDateTime</code>与<code>LocalDateTime</code>互转</p>
+<p><code>ZonedDateTime</code>相对与后者多表示时区，所以：</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ZonedDateTime BeijingTime = nowDateTime.atZone(ZoneId.of(<span class="string">&quot;Asia/Shanghai&quot;</span>));</span><br><span class="line"><span class="comment">//2022-10-27T15:11:41.466572+08:00[Asia/Shanghai]</span></span><br><span class="line">nowDateTime = BeijingTime.toLocalDateTime();</span><br><span class="line"><span class="comment">//2022-10-27T15:12:05.377544</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>OffsetDateTime</code>与<code>LocalDateTime</code>互转</p>
+<p><code>OffsetDateTime</code>相对后者多表示偏移量，偏移量(<code>ZoneOffset</code>) 的意思是时间相对与 <code>UTC</code> 标准时区的偏移的时间。</p>
+<p><code>UTC</code> 偏移量 仅仅只记录了时分秒而已，除此之外没有任何其他信息。举个例子 ，<code>+08:00</code> 的意思时超前于 <code>UTC</code> 八个小时，而 <code>-05:45</code> 意思是落后于 <code>UTC</code> 五小时四十五分钟,偏移量最大<code>+18:00</code>,最小<code>-18:00</code>。</p>
+<p>偏移量和时区的关系。<code>Asia/Shanghai</code>，也称东8区 <code>+08:00</code>。但是在某些时间场景下时区有时会对应着与之前不同的偏移量。时区跟人类社会有关，比如说以后曹县很牛，可能就会有个<code>Asia/Caoxian</code>,对应的偏移量可能就是<code>+07:40</code>。</p>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">OffsetDateTime offsetDateTime = nowDateTime.atOffset(ZoneOffset.MIN);</span><br><span class="line"><span class="comment">//2022-10-27T15:55:09.871589-18:00</span></span><br><span class="line">nowDateTime = offsetDateTime.toLocalDateTime();</span><br><span class="line"><span class="comment">//2022-10-27T15:55:09.871589</span></span><br></pre></td></tr></table></figure></li>
+<li><p>转其他格式</p>
+<ul>
+<li><p>与字符串互转之格式化</p>
+<ul>
+<li>转时间戳</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Timestamp timestamp = Timestamp.valueOf(nowDateTime);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>转时间点</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Instant point = nowDateTime.toInstant(ZoneOffset.ofHours(<span class="number">8</span>));</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h5 id="2-4-时间调整"><a href="#2-4-时间调整" class="headerlink" title="2.4 时间调整"></a>2.4 时间调整</h5><ul>
+<li><p>加减天/周/月/年/秒/分/时</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">nowDateTime.minusDays(<span class="number">1</span>);</span><br><span class="line">nowDateTime.minusWeeks(<span class="number">1</span>);</span><br><span class="line">nowDateTime.plusHours(<span class="number">1</span>);</span><br><span class="line">nowDateTime.plusMinutes(<span class="number">1</span>);</span><br><span class="line"><span class="comment">//..</span></span><br></pre></td></tr></table></figure></li>
+<li><p>加减 另一个时间</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nowDateTime = nowDateTime.plus(Period.of(<span class="number">10</span>,<span class="number">1</span>,<span class="number">1</span>));</span><br><span class="line"><span class="comment">//-before-plus: 2022-10-27T17:08:29</span></span><br><span class="line"><span class="comment">//--after-plus: 2032-11-28T17:08:29</span></span><br><span class="line"><span class="comment">//同理有minus()方法。</span></span><br></pre></td></tr></table></figure></li>
+<li><p>最后放一张图总结一下</p>
+<p><img src="https://github.com/dianedii/picBed/blob/main/20210117101208962.png?raw=true"></p>
+</li>
+<li><p>参考文章</p>
+<p><a target="_blank" rel="noopener" href="https://juejin.cn/post/6897143007108136973"><code>java 8</code> 中的 <code>ZoneOffset</code> 与 <code>ZoneId</code></a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_55305220/article/details/121924826"><code>LocalDateTime</code>、<code>OffsetDateTime</code>、<code>ZonedDateTime</code>互转</a></p>
+</li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/record/">Home</a></li>
+         
+          <li><a href="/record/about/">About</a></li>
+         
+          <li><a href="/record/archives/">Writing</a></li>
+         
+          <li><a href="/record/categories/">categories</a></li>
+         
+          <li><a href="/record/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#Java8-Time%E5%8C%85%E6%B5%85%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">Java8 Time包浅析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E4%BB%8Eapi%E4%B8%8A%E7%90%86%E8%A7%A3"><span class="toc-number">1.1.</span> <span class="toc-text">1. 从api上理解</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%85%B7%E4%BD%93%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.2.</span> <span class="toc-text">2. 具体使用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2-1-%E5%88%9B%E5%BB%BA%E6%97%B6%E9%97%B4%E5%8F%8A%E6%9F%A5%E8%AF%A2"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 创建时间及查询</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-2-%E6%97%B6%E9%97%B4%E6%AF%94%E8%BE%83"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 时间比较</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-3-%E6%97%B6%E9%97%B4%E8%BD%AC%E5%8C%96"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 时间转化</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-4-%E6%97%B6%E9%97%B4%E8%B0%83%E6%95%B4"><span class="toc-number">1.2.4.</span> <span class="toc-text">2.4 时间调整</span></a></li></ol></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&text=Java8 Time包浅析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&is_video=false&description=Java8 Time包浅析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Java8 Time包浅析&body=Check out this article: https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&title=Java8 Time包浅析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&name=Java8 Time包浅析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/&t=Java8 Time包浅析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2021
+    戴安
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/record/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

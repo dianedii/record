@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Collectors方法详解零、准备 本文的解释是基于JDK11版本，JDK8之后新增的方法会标识出来。 Collectors类是java.util.stream下的类，主要作用就是对流的处理，需要明确一点的是该类的方法与stream类中有一些方法作用相同，比如说stream.count()和stream.collect(Collectors.counting())。这里相同的两个方法使用场景不同">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Collectors方法详解">
+<meta property="og:url" content="https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="dianedii&#96;blog">
+<meta property="og:description" content="Collectors方法详解零、准备 本文的解释是基于JDK11版本，JDK8之后新增的方法会标识出来。 Collectors类是java.util.stream下的类，主要作用就是对流的处理，需要明确一点的是该类的方法与stream类中有一些方法作用相同，比如说stream.count()和stream.collect(Collectors.counting())。这里相同的两个方法使用场景不同">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-20T12:29:04.000Z">
+<meta property="article:modified_time" content="2022-09-20T12:31:13.727Z">
+<meta property="article:author" content="戴安">
+<meta property="article:tag" content="Stream">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/record/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/record/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/record/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Collectors方法详解</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/record/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/record/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/record/2022/06/11/%E4%BC%81%E4%B8%9A%E7%8E%AF%E5%A2%83%E4%B8%AD%E4%BD%BF%E7%94%A8RocketMQ%E8%BF%9B%E8%A1%8C%E6%B6%88%E8%B4%B9%E7%9A%84%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&text=Collectors方法详解"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&is_video=false&description=Collectors方法详解"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Collectors方法详解&body=Check out this article: https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&name=Collectors方法详解&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&t=Collectors方法详解"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.</span> <span class="toc-text">Collectors方法详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%B6%E3%80%81%E5%87%86%E5%A4%87"><span class="toc-number">1.1.</span> <span class="toc-text">零、准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%AE%A1%E7%AE%97%E6%93%8D%E4%BD%9C"><span class="toc-number">1.2.</span> <span class="toc-text">一、计算操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E6%B1%82%E5%B9%B3%E5%9D%87%E6%95%B0"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.求平均数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E6%B1%82%E6%80%BB%E5%92%8C"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.求总和</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-%E6%B1%82%E4%B8%AA%E6%95%B0"><span class="toc-number">1.2.3.</span> <span class="toc-text">3.求个数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-%E6%B1%82%E6%9C%80%E5%A4%A7%E6%9C%80%E5%B0%8F%E5%80%BC"><span class="toc-number">1.2.4.</span> <span class="toc-text">4.求最大最小值</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-%E6%B1%87%E6%80%BB"><span class="toc-number">1.2.5.</span> <span class="toc-text">5.汇总</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%A4%84%E7%90%86%E6%93%8D%E4%BD%9C"><span class="toc-number">1.3.</span> <span class="toc-text">二、处理操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E6%98%A0%E5%B0%84%E8%A7%84%E7%BA%A6"><span class="toc-number">1.3.1.</span> <span class="toc-text">1.映射规约</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%A4%84%E7%90%86"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.处理</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%BD%AC%E5%8C%96%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.</span> <span class="toc-text">三、转化操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E5%9F%BA%E6%9C%AC%E8%BD%AC%E5%8C%96"><span class="toc-number">1.4.1.</span> <span class="toc-text">1.基本转化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%85%B6%E4%BB%96"><span class="toc-number">1.4.2.</span> <span class="toc-text">2.其他</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Collectors方法详解
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">戴安</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-07-20T12:29:04.000Z" itemprop="datePublished">2022-07-20</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/record/categories/%E6%8A%80%E6%9C%AF/">技术</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/record/tags/Stream/" rel="tag">Stream</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="Collectors方法详解"><a href="#Collectors方法详解" class="headerlink" title="Collectors方法详解"></a>Collectors方法详解</h2><h3 id="零、准备"><a href="#零、准备" class="headerlink" title="零、准备"></a>零、准备</h3><ul>
+<li>本文的解释是基于JDK11版本，JDK8之后新增的方法会标识出来。</li>
+<li><code>Collectors</code>类是<code>java.util.stream</code>下的类，主要作用就是对流的处理，需要明确一点的是该类的方法与stream类中有一些方法作用相同，比如说<code>stream.count()</code>和<code>stream.collect(Collectors.counting())</code>。这里相同的两个方法使用<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/68017820/what-is-the-difference-between-stream-count-vs-collectors-counting">场景</a>不同：比如说当你想分组时计数则就需要用到<code>Collectors.counting()</code>方法了。</li>
+<li>我们创建两个用于演示的集合<code>list</code>和<code>stuList</code>。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">class Student&#123;</span><br><span class="line">        int age;</span><br><span class="line">        String name;</span><br><span class="line">        String gender;</span><br><span class="line">        //构造</span><br><span class="line">        //set get</span><br><span class="line"> &#125;</span><br><span class="line"> Student s1 = new Student(11,&quot;s1&quot;,&quot;man&quot;);</span><br><span class="line"> Student s2 = new Student(18,&quot;s2&quot;,&quot;man&quot;);</span><br><span class="line"> Student s3 = new Student(16,&quot;s3&quot;,&quot;woman&quot;);</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"> ArrayList&lt;Student&gt; stuList = new ArrayList&lt;&gt;(Arrays.asList(s1,s2,s3));</span><br><span class="line"> ArrayList&lt;String&gt; list = new ArrayList&lt;&gt;(Arrays.asList(&quot;1&quot;,&quot;2&quot;,&quot;7.34&quot;));</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="一、计算操作"><a href="#一、计算操作" class="headerlink" title="一、计算操作"></a>一、计算操作</h3><h4 id="1-求平均数"><a href="#1-求平均数" class="headerlink" title="1.求平均数"></a>1.求平均数</h4><ul>
+<li><code>Collectors.averagingDouble();</code></li>
+<li><code>Collectors.averagingLong();</code></li>
+<li><code>Collectors.averagingInt();</code></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">//将String转成Double求平均数</span><br><span class="line">Double res = list.stream().collect(Collectors.averagingDouble(Double::parseDouble));</span><br><span class="line">//将list中元素做处理再转成Double求平均数</span><br><span class="line">Double res1 = list.stream().collect(Collectors.averagingDouble(d -&gt; Double.parseDouble(d) *2));</span><br><span class="line">//同理有averagingInt，不过他返回一个Float</span><br><span class="line">//同理有averagingLong，他返回一个Double</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-求总和"><a href="#2-求总和" class="headerlink" title="2.求总和"></a>2.求总和</h4><ul>
+<li><code>Collectors.summingInt();</code></li>
+<li><code>Collectors.summingLong();</code></li>
+<li><code>Collectors.summingDouble();</code></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Integer res7 = list.stream().collect(Collectors.summingInt(Integer::parseInt));</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-求个数"><a href="#3-求个数" class="headerlink" title="3.求个数"></a>3.求个数</h4><ul>
+<li><p><code>Collectors.counting();</code></p>
+<p>用于统计流中元素的个数。（因为在流的处理中会对集合的元素个数有影响，当流没结束时，直接获取集合size会出现问题）<br>不过他返回的类型是<code>Long</code></p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Long res2 = list.stream().collect(Collectors.counting());</span><br><span class="line">//在没有对集合进行例如filter等操作时，他是相等于直接获取size()的</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-求最大最小值"><a href="#4-求最大最小值" class="headerlink" title="4.求最大最小值"></a>4.求最大最小值</h4><ul>
+<li><code>Collectors.maxBy();</code></li>
+<li><code>Collectors.minBy();</code></li>
+</ul>
+<p>​       接受一个比较器(比较方式)作为参数，用于计算流中所有元素的最大值和最小值。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stuList.stream().collect(Collectors.maxBy(Comparator.comparingInt((Student o) -&gt; o.age)));</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-汇总"><a href="#5-汇总" class="headerlink" title="5.汇总"></a>5.汇总</h4><p>返回一个统计对象<code>IntSummaryStatistics</code>，该对象里包含【平均值，最大值，总和，最小值，长度】</p>
+<ul>
+<li><code>Collectors.summarizingInt();</code></li>
+<li><code>Collectors.summarizingLong();</code></li>
+<li><code>Collectors.summarizingDouble();</code></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">IntSummaryStatistics res8 = stuList.stream().collect(Collectors.summarizingInt(Student::getAge));</span><br><span class="line">res8.getAverage();</span><br><span class="line">res8.getCount();</span><br><span class="line">res8.getMax();</span><br><span class="line">res8.getMin();</span><br><span class="line">res8.getSum();</span><br></pre></td></tr></table></figure>
+
+<h3 id="二、处理操作"><a href="#二、处理操作" class="headerlink" title="二、处理操作"></a>二、处理操作</h3><h4 id="1-映射规约"><a href="#1-映射规约" class="headerlink" title="1.映射规约"></a>1.映射规约</h4><ul>
+<li><p><code>Collectors.mapping();</code></p>
+</li>
+<li><p><code>Collectors.reducing();</code></p>
+<p><code>maping</code> 方法指将一个流中的内容进行映射变换操作，<code>reducing</code>方法指对流中数据进行规约处理操作。</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; stuNameList = Stream.of(studentA,studentB,studentC)</span><br><span class="line">        .collect(Collectors.mapping(Student::getName,Collectors.toList()));</span><br><span class="line">Optional&lt;Integer&gt; res = Stream.of(studentA, studentB, studentC)</span><br><span class="line">        .map(student -&gt; student.name.length())</span><br><span class="line">        .collect(Collectors.reducing(Integer::sum));</span><br><span class="line">Integer resInt = res.get();</span><br></pre></td></tr></table></figure>
+
+
+
+<ul>
+<li><p><code>Collectors.collectingAndThen();</code></p>
+<p>集合先进行第一个参数 map（映射）操作，再进行第二个参数的reduce（归约）操作。</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">//下例是将数组中元素先 *2 再求平均数的一个操作。</span><br><span class="line">Double res4 = list.stream().</span><br><span class="line">        collect(Collectors.collectingAndThen(Collectors.averagingDouble(Double::parseDouble),d -&gt; d *2));</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-处理"><a href="#2-处理" class="headerlink" title="2.处理"></a>2.处理</h4><ul>
+<li><p><code>Collectors.joining();</code></p>
+<p>可以以顺序拼接元素。我们可以传递可选的拼接字符串、前缀和后缀。</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">String res6 = list.stream().collect(Collectors.joining(&quot;-&quot;,&quot;[&quot;,&quot;]&quot;));</span><br><span class="line">//res6 = [1-2-7.34]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>Collectors.groupingBy();</code></p>
+<p>对集合进行分组操作</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, List&lt;Student&gt;&gt; res5 = stuList.stream().collect(Collectors.groupingBy(Student::getGender));</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>Collectors.groupingByConcurrent();</code><br>相对于<code>groupingBy(),</code>它更能满足：不要求顺序（无序），更需要并发的分组操作。</p>
+</li>
+<li><p><code>Collectors.filtering();</code>       Java 9</p>
+<p><code>Collectors.filtering()</code>方法类似于<code>Stream filter()</code>方法，后者用于过滤输入元素，但两者的使用场景不同。<code>Stream filter()</code>在stream链接方法中使用，而<code>Collectors.filtering()</code>方法被设计和 <code>groupingBy</code>一起使用。</p>
+</li>
+<li><p><code>Collectors.flatMapping(); </code>   Java9 </p>
+<p>它允许我们处理嵌套的集合，在其中再进行流处理</p>
+</li>
+<li><p><code>Collectors.partitioningBy();</code></p>
+<p>是一种将流的元素始终分为两部分的方法。</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;Boolean, List&lt;Student&gt;&gt; stdByClass =</span><br><span class="line">            stuList.stream().collect(Collectors.partitioningBy(s -&gt; s.getAge() &gt; 15));</span><br></pre></td></tr></table></figure>
+
+<h3 id="三、转化操作"><a href="#三、转化操作" class="headerlink" title="三、转化操作"></a>三、转化操作</h3><h4 id="1-基本转化"><a href="#1-基本转化" class="headerlink" title="1.基本转化"></a>1.基本转化</h4><ul>
+<li><p><code>Collectors.toCollection();</code></p>
+<p>返回一个Collection集合，（集合层次结构中的基类）</p>
+</li>
+<li><p><code>Collectors.toMap();</code></p>
+</li>
+<li><p><code>Collectors.toSet();</code></p>
+</li>
+<li><p><code>Collectors.toList();</code></p>
+</li>
+</ul>
+<h4 id="2-其他"><a href="#2-其他" class="headerlink" title="2.其他"></a>2.其他</h4><ul>
+<li><p><code>Collectors.toConcurrentMap();</code></p>
+<p>返回一个支持并发的Map,代价则是它是无序的。</p>
+</li>
+<li><p><code>Collectors.toUnmodifiableList();</code>   java10 </p>
+</li>
+<li><p><code>Collectors.toUnmodifiableSet();</code></p>
+</li>
+<li><p><code>Collectors.toUnmodifiableMap();</code></p>
+<p>返回一个不可变的集合，即不能对它进行增删改操作。与<code>stream.toList();</code>一样。</p>
+</li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/record/">Home</a></li>
+         
+          <li><a href="/record/about/">About</a></li>
+         
+          <li><a href="/record/archives/">Writing</a></li>
+         
+          <li><a href="/record/categories/">categories</a></li>
+         
+          <li><a href="/record/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.</span> <span class="toc-text">Collectors方法详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%B6%E3%80%81%E5%87%86%E5%A4%87"><span class="toc-number">1.1.</span> <span class="toc-text">零、准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%AE%A1%E7%AE%97%E6%93%8D%E4%BD%9C"><span class="toc-number">1.2.</span> <span class="toc-text">一、计算操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E6%B1%82%E5%B9%B3%E5%9D%87%E6%95%B0"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.求平均数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E6%B1%82%E6%80%BB%E5%92%8C"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.求总和</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-%E6%B1%82%E4%B8%AA%E6%95%B0"><span class="toc-number">1.2.3.</span> <span class="toc-text">3.求个数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-%E6%B1%82%E6%9C%80%E5%A4%A7%E6%9C%80%E5%B0%8F%E5%80%BC"><span class="toc-number">1.2.4.</span> <span class="toc-text">4.求最大最小值</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-%E6%B1%87%E6%80%BB"><span class="toc-number">1.2.5.</span> <span class="toc-text">5.汇总</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%A4%84%E7%90%86%E6%93%8D%E4%BD%9C"><span class="toc-number">1.3.</span> <span class="toc-text">二、处理操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E6%98%A0%E5%B0%84%E8%A7%84%E7%BA%A6"><span class="toc-number">1.3.1.</span> <span class="toc-text">1.映射规约</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%A4%84%E7%90%86"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.处理</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%BD%AC%E5%8C%96%E6%93%8D%E4%BD%9C"><span class="toc-number">1.4.</span> <span class="toc-text">三、转化操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E5%9F%BA%E6%9C%AC%E8%BD%AC%E5%8C%96"><span class="toc-number">1.4.1.</span> <span class="toc-text">1.基本转化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E5%85%B6%E4%BB%96"><span class="toc-number">1.4.2.</span> <span class="toc-text">2.其他</span></a></li></ol></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&text=Collectors方法详解"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&is_video=false&description=Collectors方法详解"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Collectors方法详解&body=Check out this article: https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&title=Collectors方法详解"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&name=Collectors方法详解&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/07/20/Collectors%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/&t=Collectors方法详解"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2021
+    戴安
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/record/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
