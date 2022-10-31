@@ -20,7 +20,9 @@
       
         <tags>
             
-            <tag> Stream,Java8 </tag>
+            <tag> Stream </tag>
+            
+            <tag> Java8 </tag>
             
         </tags>
       
@@ -45,7 +47,9 @@
       
         <tags>
             
-            <tag> Time,Java8 </tag>
+            <tag> Java8 </tag>
+            
+            <tag> Time </tag>
             
         </tags>
       
@@ -71,6 +75,8 @@
         <tags>
             
             <tag> Stream </tag>
+            
+            <tag> Java8 </tag>
             
         </tags>
       
