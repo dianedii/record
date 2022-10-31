@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Stream流常见方法浅析flatMapflatMap方法用于将流中的每个元素转换成其他类型元素的流，比如，当前有一个订单(Order)列表，每个订单又包含多个商品(itemList)，如果要得到所有订单的所有商品汇总，就可以使用该方法，如下： 1Stream&lt;Item&gt; allItemStream &#x3D; orderList.stream().flatMap(order -&gt; or">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Stream流常见方法浅析">
+<meta property="og:url" content="https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/index.html">
+<meta property="og:site_name" content="dianedii&#96;blog">
+<meta property="og:description" content="Stream流常见方法浅析flatMapflatMap方法用于将流中的每个元素转换成其他类型元素的流，比如，当前有一个订单(Order)列表，每个订单又包含多个商品(itemList)，如果要得到所有订单的所有商品汇总，就可以使用该方法，如下： 1Stream&lt;Item&gt; allItemStream &#x3D; orderList.stream().flatMap(order -&gt; or">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-10-31T06:48:38.000Z">
+<meta property="article:modified_time" content="2022-10-31T06:52:17.100Z">
+<meta property="article:author" content="戴安">
+<meta property="article:tag" content="Stream,Java8">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/record/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/record/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/record/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Stream流常见方法浅析</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/record/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/record/2022/08/27/java8-Time%E5%8C%85%E6%B5%85%E6%9E%90/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Stream%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">Stream流常见方法浅析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#flatMap"><span class="toc-number">1.0.1.</span> <span class="toc-text">flatMap</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#distinct"><span class="toc-number">1.0.2.</span> <span class="toc-text">distinct</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sorted"><span class="toc-number">1.0.3.</span> <span class="toc-text">sorted</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#peek"><span class="toc-number">1.0.4.</span> <span class="toc-text">peek</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#skip-long-n"><span class="toc-number">1.0.5.</span> <span class="toc-text">skip(long n)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#forEachOrdered"><span class="toc-number">1.0.6.</span> <span class="toc-text">forEachOrdered</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#reduce"><span class="toc-number">1.0.7.</span> <span class="toc-text">reduce</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#collect"><span class="toc-number">1.0.8.</span> <span class="toc-text">collect</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#anyMatch"><span class="toc-number">1.0.9.</span> <span class="toc-text">anyMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#allMatch"><span class="toc-number">1.0.10.</span> <span class="toc-text">allMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#noneMatch"><span class="toc-number">1.0.11.</span> <span class="toc-text">noneMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#findFirst"><span class="toc-number">1.0.12.</span> <span class="toc-text">findFirst</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#findAny"><span class="toc-number">1.0.13.</span> <span class="toc-text">findAny</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Stream流常见方法浅析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">戴安</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-10-31T06:48:38.000Z" itemprop="datePublished">2022-10-31</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/record/categories/%E6%8A%80%E6%9C%AF/">技术</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/record/tags/Stream-Java8/" rel="tag">Stream,Java8</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="Stream流常见方法浅析"><a href="#Stream流常见方法浅析" class="headerlink" title="Stream流常见方法浅析"></a><code>Stream</code>流常见方法浅析</h2><h4 id="flatMap"><a href="#flatMap" class="headerlink" title="flatMap"></a>flatMap</h4><p><code>flatMap</code>方法用于将流中的每个元素转换成其他类型元素的流，比如，当前有一个订单(Order)列表，每个订单又包含多个商品<code>(itemList)</code>，如果要得到所有订单的所有商品汇总，就可以使用该方法，如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Item&gt; allItemStream = orderList.stream().flatMap(order -&gt; order.itemList.stream());</span><br></pre></td></tr></table></figure>
+
+<h4 id="distinct"><a href="#distinct" class="headerlink" title="distinct"></a>distinct</h4><p><code>distinct</code>方法用于对流中的元素去重，判断元素是否重复使用的是<code>equals</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//不重复的数字流，uniqueNumStream -&gt; (-2, -1, 0, 1, 2, 3)</span></span><br><span class="line">Stream&lt;Integer&gt; uniqueNumStream = numStream.distinct();</span><br></pre></td></tr></table></figure>
+
+<h4 id="sorted"><a href="#sorted" class="headerlink" title="sorted"></a>sorted</h4><p><code>sorted</code>有一个无参和一个有参的方法，用于对流中的元素进行排序。无参方法要求流中的元素必须实现<code>Comparable</code>接口，不然会报<code>java.lang.ClassCastException</code>异常</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; unorderedStream = Stream.of(<span class="number">5</span>, <span class="number">6</span>, <span class="number">32</span>, <span class="number">7</span>, <span class="number">27</span>, <span class="number">4</span>);</span><br><span class="line"><span class="comment">//按从小到大排序完成的流，orderedStream -&gt; (4, 5, 6, 7, 27, 32)</span></span><br><span class="line">Stream&lt;Integer&gt; orderedStream = unorderedStream.sorted();</span><br></pre></td></tr></table></figure>
+
+<p>有参方法<code>sorted(Comparator&lt;? super T&gt; comparator)</code>不需要元素实现<code>Comparable</code>接口，通过指定的元素比较器对流内的元素进行排序</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;String&gt; unorderedStream = Stream.of(<span class="string">&quot;1234&quot;</span>, <span class="string">&quot;123&quot;</span>, <span class="string">&quot;12&quot;</span>, <span class="string">&quot;12345&quot;</span>, <span class="string">&quot;123456&quot;</span>, <span class="string">&quot;1&quot;</span>);</span><br><span class="line"><span class="comment">//按字符串长度从小到大排序完成的流，orderedStream -&gt; (&quot;1&quot;, &quot;12&quot;, &quot;123&quot;, &quot;1234&quot;, &quot;12345&quot;, &quot;123456&quot;)</span></span><br><span class="line">Stream&lt;String&gt; orderedStream = unorderedStream.sorted(Comparator.comparingInt(String::length));</span><br></pre></td></tr></table></figure>
+
+<h4 id="peek"><a href="#peek" class="headerlink" title="peek"></a>peek</h4><p><code>peek</code>方法可以不调整元素顺序和数量的情况下消费每一个元素，然后产生新的流，主要是用于对流执行的中间过程做debug的时候使用，因为<code>Stream</code>使用的时候一般都是链式调用的，所以可能会执行多次流操作，如果想看每个元素在多次流操作中间的流转情况，就可以使用这个方法实现</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Stream.of(<span class="string">&quot;one&quot;</span>, <span class="string">&quot;two&quot;</span>, <span class="string">&quot;three&quot;</span>, <span class="string">&quot;four&quot;</span>)</span><br><span class="line">     .filter(e -&gt; e.length() &gt; <span class="number">3</span>)</span><br><span class="line">     .peek(e -&gt; System.out.println(<span class="string">&quot;Filtered value: &quot;</span> + e))</span><br><span class="line">     .map(String::toUpperCase)</span><br><span class="line">     .peek(e -&gt; System.out.println(<span class="string">&quot;Mapped value: &quot;</span> + e))</span><br><span class="line">     .collect(Collectors.toList());</span><br><span class="line">     </span><br><span class="line">输出：</span><br><span class="line">Filtered value: three</span><br><span class="line">Mapped value: THREE</span><br><span class="line">Filtered value: four</span><br><span class="line">Mapped value: FOUR</span><br></pre></td></tr></table></figure>
+
+<h4 id="skip-long-n"><a href="#skip-long-n" class="headerlink" title="skip(long n)"></a>skip(long n)</h4><p><code>skip</code>方法用于跳过前n个元素，如果流中的元素数量不足n，则返回一个空的流</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;String&gt; stringStream = Stream.of(<span class="string">&quot;-2&quot;</span>, <span class="string">&quot;-1&quot;</span>, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;2&quot;</span>, <span class="string">&quot;3&quot;</span>);</span><br><span class="line"><span class="comment">//跳过前3个元素，subStringStream -&gt; (&quot;1&quot;, &quot;2&quot;, &quot;3&quot;)</span></span><br><span class="line">Stream&lt;String&gt; subStringStream = stringStream.skip(<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="forEachOrdered"><a href="#forEachOrdered" class="headerlink" title="forEachOrdered"></a>forEachOrdered</h4><p><code>forEachOrdered</code>方法可以保证顺序遍历，比如这个流是从外部传进来的，然后在这之前调用过<code>parallel</code>方法开启了多线程执行，就可以使用这个方法保证单线程顺序遍历</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;String&gt; stringStream = Stream.of(<span class="string">&quot;-2&quot;</span>, <span class="string">&quot;-1&quot;</span>, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;2&quot;</span>, <span class="string">&quot;3&quot;</span>);</span><br><span class="line"><span class="comment">//顺序遍历输出元素</span></span><br><span class="line"><span class="comment">//单线程操作流的时候它与forEach()是一致的。</span></span><br><span class="line">stringStream.forEachOrdered(System.out::println);</span><br><span class="line">stringStream.forEach(System.out::println);</span><br><span class="line"><span class="comment">//多线程遍历输出元素，下面这行跟上面的执行结果是一样的</span></span><br><span class="line">stringStream.parallel().forEachOrdered(System.out::println);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="reduce"><a href="#reduce" class="headerlink" title="reduce"></a>reduce</h4><p><code>reduce</code>有三个重载方法，作用是对流内元素做累进操作</p>
+<p>第一个<code>reduce(BinaryOperator&lt;T&gt; accumulator)</code></p>
+<p><code>accumulator</code> 为累进操作的具体计算</p>
+<p>单线程等价如下代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> foundAny = <span class="keyword">false</span>;</span><br><span class="line">T result = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">for</span> (T element : <span class="keyword">this</span> stream) &#123;</span><br><span class="line">  <span class="keyword">if</span> (!foundAny) &#123;</span><br><span class="line">      foundAny = <span class="keyword">true</span>;</span><br><span class="line">      result = element;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">      result = accumulator.apply(result, element);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> foundAny ? Optional.of(result) : Optional.empty();</span><br><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//查找最小值</span></span><br><span class="line">Optional&lt;Integer&gt; min = numStream.reduce(BinaryOperator.minBy(Integer::compareTo));</span><br><span class="line"><span class="comment">//输出 -2</span></span><br><span class="line">System.out.println(min.get());</span><br><span class="line"></span><br><span class="line"><span class="comment">//过滤出大于5的元素流</span></span><br><span class="line">numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>).filter(num -&gt; num &gt; <span class="number">5</span>);</span><br><span class="line"><span class="comment">//查找最小值</span></span><br><span class="line">min = numStream.reduce(BinaryOperator.minBy(Integer::compareTo));</span><br><span class="line"><span class="comment">//输出 Optional.empty</span></span><br><span class="line">System.out.println(min);</span><br></pre></td></tr></table></figure>
+
+<p>第二个<code>reduce(T identity, BinaryOperator&lt;T&gt; accumulator)</code></p>
+<p><code>identity</code> 为累进操作的初始值<br><code>accumulator</code> 同上</p>
+<p>单线程等价如下代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">T result = identity;</span><br><span class="line"><span class="keyword">for</span> (T element : <span class="keyword">this</span> stream)</span><br><span class="line">  result = accumulator.apply(result, element)</span><br><span class="line"><span class="keyword">return</span> result;</span><br><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//累加计算所有元素的和，sum=3</span></span><br><span class="line"><span class="keyword">int</span> sum = numStream.reduce(<span class="number">0</span>, Integer::sum);</span><br></pre></td></tr></table></figure>
+
+<p>第三个<code>reduce(U identity, BiFunction&lt;U, ? super T, U&gt; accumulator, BinaryOperator&lt;U&gt; combiner)</code></p>
+<p><code>identity</code>和<code>accumulator</code>同上<br><code>combiner</code>用于多线程执行的情况下合并最终结果</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="keyword">int</span> sum = numStream.parallel().reduce(<span class="number">0</span>, (a, b) -&gt; &#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;accumulator执行:&quot;</span> + a + <span class="string">&quot; + &quot;</span> + b);</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;, (a, b) -&gt; &#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;combiner执行:&quot;</span> + a + <span class="string">&quot; + &quot;</span> + b);</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;);</span><br><span class="line">System.out.println(<span class="string">&quot;最终结果：&quot;</span>+sum);</span><br><span class="line"></span><br><span class="line">输出：</span><br><span class="line">accumulator执行:<span class="number">0</span> + -<span class="number">1</span></span><br><span class="line">accumulator执行:<span class="number">0</span> + <span class="number">1</span></span><br><span class="line">accumulator执行:<span class="number">0</span> + <span class="number">0</span></span><br><span class="line">accumulator执行:<span class="number">0</span> + <span class="number">2</span></span><br><span class="line">accumulator执行:<span class="number">0</span> + -<span class="number">2</span></span><br><span class="line">accumulator执行:<span class="number">0</span> + <span class="number">3</span></span><br><span class="line">combiner执行:<span class="number">2</span> + <span class="number">3</span></span><br><span class="line">combiner执行:-<span class="number">1</span> + <span class="number">0</span></span><br><span class="line">combiner执行:<span class="number">1</span> + <span class="number">5</span></span><br><span class="line">combiner执行:-<span class="number">2</span> + -<span class="number">1</span></span><br><span class="line">combiner执行:-<span class="number">3</span> + <span class="number">6</span></span><br><span class="line">最终结果：<span class="number">3</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="collect"><a href="#collect" class="headerlink" title="collect"></a>collect</h4><p><code>collect</code>有两个重载方法，主要作用是把流中的元素作为集合转换成其他<code>Collection</code>的子类，其内部实现类似于前面的累进操作</p>
+<p>第一个<code>collect(Supplier&lt;R&gt; supplier, BiConsumer&lt;R, ? super T&gt; accumulator, BiConsumer&lt;R, R&gt; combiner)</code></p>
+<p><code>supplier</code> 需要返回开始执行时的默认结果<br><code>accumulator</code> 用于累进计算用<br><code>combiner</code> 用于多线程合并结果</p>
+<p>单线程执行等价于如下代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">R result = supplier.get();</span><br><span class="line"><span class="keyword">for</span> (T element : <span class="keyword">this</span> stream)</span><br><span class="line">  accumulator.accept(result, element);</span><br><span class="line"><span class="keyword">return</span> result;</span><br></pre></td></tr></table></figure>
+
+<p>第二个<code>collect(Collector&lt;? super T, A, R&gt; collector)</code></p>
+<p><code>Collector</code>其实是对上面的方法参数的一个封装，内部执行逻辑是一样的，只不过JDK提供了一些默认的<code>Collector</code>实现，对于</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">List&lt;Integer&gt; numList = numStream.collect(Collectors.toList());</span><br><span class="line">Set&lt;Integer&gt; numSet = numStream.collect(Collectors.toSet());</span><br></pre></td></tr></table></figure>
+
+<h4 id="anyMatch"><a href="#anyMatch" class="headerlink" title="anyMatch"></a>anyMatch</h4><p><code>anyMatch</code>方法用于匹配校验流内元素是否有符合指定条件的元素</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//判断是否包含正数，hasPositiveNum=true</span></span><br><span class="line"><span class="keyword">boolean</span> hasPositiveNum = numStream.anyMatch(num -&gt; num &gt; <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="allMatch"><a href="#allMatch" class="headerlink" title="allMatch"></a>allMatch</h4><p><code>allMatch</code>方法用于匹配校验流内元素是否所有元素都符合指定条件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//判断是否全部是正数，allNumPositive=false</span></span><br><span class="line"><span class="keyword">boolean</span> allNumPositive = numStream.allMatch(num -&gt; num &gt; <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="noneMatch"><a href="#noneMatch" class="headerlink" title="noneMatch"></a>noneMatch</h4><p><code>noneMatch</code>方法用于匹配校验流内元素是否都不符合指定条件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//判断是否没有小于0的元素，noNegativeNum=false</span></span><br><span class="line"><span class="keyword">boolean</span> noNegativeNum = numStream.noneMatch(num -&gt; num &lt; <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="findFirst"><a href="#findFirst" class="headerlink" title="findFirst"></a>findFirst</h4><p><code>findFirst</code>方法用于获取第一个元素，如果流是空的，则返回Optional.empty</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="comment">//获取第一个元素，firstNum=-2</span></span><br><span class="line">Optional&lt;Integer&gt; firstNum = numStream.findFirst();</span><br></pre></td></tr></table></figure>
+
+<h4 id="findAny"><a href="#findAny" class="headerlink" title="findAny"></a>findAny</h4><p><code>findAny</code>方法用于获取流中的任意一个元素，如果流是空的，则返回Optional.empty，因为可能会使用多线程，所以不保证每次返回的是同一个元素</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; numStream = Stream.of(-<span class="number">2</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">Optional&lt;Integer&gt; anyNum = numStream.findAny();</span><br></pre></td></tr></table></figure>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/record/">Home</a></li>
+         
+          <li><a href="/record/about/">About</a></li>
+         
+          <li><a href="/record/archives/">Writing</a></li>
+         
+          <li><a href="/record/categories/">categories</a></li>
+         
+          <li><a href="/record/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Stream%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">Stream流常见方法浅析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#flatMap"><span class="toc-number">1.0.1.</span> <span class="toc-text">flatMap</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#distinct"><span class="toc-number">1.0.2.</span> <span class="toc-text">distinct</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sorted"><span class="toc-number">1.0.3.</span> <span class="toc-text">sorted</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#peek"><span class="toc-number">1.0.4.</span> <span class="toc-text">peek</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#skip-long-n"><span class="toc-number">1.0.5.</span> <span class="toc-text">skip(long n)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#forEachOrdered"><span class="toc-number">1.0.6.</span> <span class="toc-text">forEachOrdered</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#reduce"><span class="toc-number">1.0.7.</span> <span class="toc-text">reduce</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#collect"><span class="toc-number">1.0.8.</span> <span class="toc-text">collect</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#anyMatch"><span class="toc-number">1.0.9.</span> <span class="toc-text">anyMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#allMatch"><span class="toc-number">1.0.10.</span> <span class="toc-text">allMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#noneMatch"><span class="toc-number">1.0.11.</span> <span class="toc-text">noneMatch</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#findFirst"><span class="toc-number">1.0.12.</span> <span class="toc-text">findFirst</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#findAny"><span class="toc-number">1.0.13.</span> <span class="toc-text">findAny</span></a></li></ol></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2021
+    戴安
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/record/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
