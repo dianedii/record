@@ -9,12 +9,12 @@
     <meta name="description" content="Stream流常见方法浅析flatMapflatMap方法用于将流中的每个元素转换成其他类型元素的流，比如，当前有一个订单(Order)列表，每个订单又包含多个商品(itemList)，如果要得到所有订单的所有商品汇总，就可以使用该方法，如下： 1Stream&lt;Item&gt; allItemStream &#x3D; orderList.stream().flatMap(order -&gt; or">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Stream流常见方法浅析">
-<meta property="og:url" content="https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/index.html">
+<meta property="og:url" content="https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/index.html">
 <meta property="og:site_name" content="dianedii&#96;blog">
 <meta property="og:description" content="Stream流常见方法浅析flatMapflatMap方法用于将流中的每个元素转换成其他类型元素的流，比如，当前有一个订单(Order)列表，每个订单又包含多个商品(itemList)，如果要得到所有订单的所有商品汇总，就可以使用该方法，如下： 1Stream&lt;Item&gt; allItemStream &#x3D; orderList.stream().flatMap(order -&gt; or">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2022-10-31T06:48:38.000Z">
-<meta property="article:modified_time" content="2022-10-31T06:52:17.100Z">
+<meta property="article:published_time" content="2022-09-11T06:48:38.000Z">
+<meta property="article:modified_time" content="2022-10-31T06:55:54.834Z">
 <meta property="article:author" content="戴安">
 <meta property="article:tag" content="Stream,Java8">
 <meta name="twitter:card" content="summary">
@@ -91,17 +91,17 @@
     <br/>
     <div id="share" style="display: none">
       <ul>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
@@ -130,7 +130,7 @@
       
     <div class="postdate">
       
-        <time datetime="2022-10-31T06:48:38.000Z" itemprop="datePublished">2022-10-31</time>
+        <time datetime="2022-09-11T06:48:38.000Z" itemprop="datePublished">2022-09-11</time>
         
       
     </div>
@@ -247,17 +247,17 @@
 
     <div id="share-footer" style="display: none">
       <ul>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/31/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&text=Stream流常见方法浅析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&is_video=false&description=Stream流常见方法浅析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Stream流常见方法浅析&body=Check out this article: https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&title=Stream流常见方法浅析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&name=Stream流常见方法浅析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/&t=Stream流常见方法浅析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
