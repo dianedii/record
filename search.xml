@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>一次生产慢查询优化实例</title>
+      <link href="/record/2022/11/15/%E4%B8%80%E6%AC%A1%E7%94%9F%E4%BA%A7%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%AE%9E%E4%BE%8B/"/>
+      <url>/record/2022/11/15/%E4%B8%80%E6%AC%A1%E7%94%9F%E4%BA%A7%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%AE%9E%E4%BE%8B/</url>
+      
+        <content type="html"><![CDATA[<p>背景：项目上线后，发现某查询接口比较慢，定位到是SQL查询问题，查询时间大约在<code>3～5s</code>。数据库是<code>Oracle</code>。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--待优化SQL</span></span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">  STRATEGY_ID,</span><br><span class="line">  CIF_NO,</span><br><span class="line">  BIZ_TYPE,</span><br><span class="line">  T_TYPE,</span><br><span class="line">  FINANCE,</span><br><span class="line">  START_TIME,</span><br><span class="line">  END_TIME,</span><br><span class="line">  STRATEGY_NAME,</span><br><span class="line">  DIRECTION,</span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">  XXX_XXX_STRATEGY</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">  (</span><br><span class="line">    CIF _NO <span class="operator">=</span> ?</span><br><span class="line">    <span class="keyword">and</span> T_TYPE <span class="operator">=</span> <span class="string">&#x27;A&#x27;</span></span><br><span class="line">    <span class="keyword">and</span> DIRECTION <span class="operator">=</span> ?</span><br><span class="line">  )</span><br><span class="line">  <span class="keyword">or</span> T_TYPE <span class="operator">=</span> <span class="string">&#x27;B&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> START_TIME <span class="operator">&lt;=</span> ? <span class="keyword">and</span> END_TIME <span class="operator">&gt;=</span> ? <span class="keyword">order</span> <span class="keyword">by</span> START_TINE <span class="keyword">desc</span></span><br></pre></td></tr></table></figure><p><code>XXX_XXX_STRATEGY</code>表的索引情况：</p><p>​    唯一索引：<code>STRATEGY_ID</code></p><p>​    普通索引：<code>CIF_NO,BIZ_TYPE,END_TIME,STRATEGY_NAME</code></p><p>定位原因：</p><p><code>OR</code>前半段查询条件相对比较精确，查询结果是比较少的。</p><p><code>OR</code>后半段的<code> T_TYPE =&#39;B&#39;</code> 在生产上查出了大量数据（万级），但是在后续业务处理时大部分被去重了（剩余数据为 百级）。</p><hr><p>这里同事给出方案一：分表：将<code>TYPE = &#39;B&#39;</code>的数据存放在一个新建的表中，但这样问题是不管放在哪总是查询出了大量数据，总是快不了的。由于数据量大肯定走了全表扫描，使用索引也是无效的。</p><p>所以要将优化重点放到<code>SQL</code>本身上。</p><p>首先肯定需要拆成两个<code>SQL</code>，首先将<code>OR</code>优化为 <code>UNION ALL</code>试试情况：查询时间还是跟之前一样。</p><p>这时，我们看到这里的查询结果其实都被之后的去重逻辑给去掉了，我们能不能在查询的时候就给他去重呢？</p><p>答案是肯定的。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--拆分出来的SQL</span></span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">  STRATEGY_ID,</span><br><span class="line">  T_TYPE,</span><br><span class="line">  FINANCE,</span><br><span class="line">  START_TIME,</span><br><span class="line">  END_TIME,</span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">  XXX_XXX_STRATEGY</span><br><span class="line"><span class="keyword">WHERE</span>  </span><br><span class="line">  T_TYPE <span class="operator">=</span> <span class="string">&#x27;B&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> START_TIME <span class="operator">&lt;=</span> ? <span class="keyword">AND</span> END_TIME <span class="operator">&gt;=</span> ? <span class="keyword">ORDER</span> <span class="keyword">BY</span> START_TINE <span class="keyword">DESC</span></span><br></pre></td></tr></table></figure><p>根据业务逻辑，类型为<code>&#39;B&#39;</code>的数据主要使用到的字段是<code>FINANCE</code>，生产中推送入库时推送了大量的该字段的重复数据进来。这一点在<code>UAT</code>环境中是没有预料到的。我们立马就想到了用分组来过滤，但是需要将<code>FINANCE</code>字段相同的数据取最新的一条，这样分组同时还需要排序。先看最后优化的<code>SQL</code>。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">  <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">  (</span><br><span class="line">    <span class="keyword">SELECT</span></span><br><span class="line">      STRATEGY_ID,</span><br><span class="line">      T_TYPE,</span><br><span class="line">      FINANCE,</span><br><span class="line">      START_TIME,</span><br><span class="line">      END_TIME,</span><br><span class="line">      ...,</span><br><span class="line">      <span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> e.FINANCE <span class="keyword">order</span> <span class="keyword">by</span> e.START_TIME <span class="keyword">desc</span>) rankNo</span><br><span class="line">    <span class="keyword">from</span></span><br><span class="line">      XXX_XXX_STRATEGY e</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">      e.T_TYPE <span class="operator">=</span> <span class="string">&#x27;B&#x27;</span> <span class="keyword">AND</span> START_TIME <span class="operator">&lt;=</span> ? <span class="keyword">and</span> END_TIME <span class="operator">&gt;=</span> ? </span><br><span class="line">  ) r</span><br><span class="line">  <span class="keyword">where</span> r.rankNo <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure><p>我们主要使用了<code>over()</code>函数:它给<code> partition by</code>的分组结果给提供了一个封闭的区间，而<code>row_number()</code>函数：会在<code>over()</code>的每个区间范围内重新分配一个递增的行号。这里我们取行号为<code>1</code>的数据即是取按时间排序第一位的数据。</p><p><code>SQL</code>去重后在十万级的数据量下查询速度约为<code>0.4s</code>，虽然还是不算快，但是已经算解决了问题啦。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 技术 </category>
+          
+          <category> 工作 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 调优 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Stream流常见方法浅析</title>
       <link href="/record/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"/>
       <url>/record/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/</url>
@@ -358,7 +385,7 @@
       
         <tags>
             
-            <tag> 接口调优 </tag>
+            <tag> 调优 </tag>
             
         </tags>
       
