@@ -29,6 +29,31 @@
     
     
     <entry>
+      <title>RocketMQ消息状态异常问题排查</title>
+      <link href="/record/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"/>
+      <url>/record/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/</url>
+      
+        <content type="html"><![CDATA[<p><code>MQ</code>一般问题发现的流程是发现消息收不到，然后到控制台去查询消息状态。结果发现可能是<code>XXXX</code>。这里就明确一下消息投递的异常状态，和造成这种异常状态的常见的原因。本文的<code>MQ</code>指的是<code>RocketMQ</code>。</p><h3 id="消息状态"><a href="#消息状态" class="headerlink" title="消息状态"></a>消息状态</h3><ul><li><p><code>NOT_ONLINE</code></p><p>订阅端不在线（未启动）</p></li><li><p><code>CONSUMED</code></p><p>已消费（正常状态）</p></li><li><p><code>CONSUMED_BUT_FILTERED</code></p><p>消息已经被投递且被过滤。（一个消费组能同时订阅多个 tag，但一个消费组的不同消费者不能分开订阅不同的tag，即同一个消费组的订阅关系必须保持一样。）</p></li><li><p><code>NOT_CONSUME_YET</code></p><p>暂未消费（尝试多次消费失败）</p></li><li><p><code>UNKNOWN</code></p><p>未知状态（原因比较多）</p></li></ul><h3 id="问题场景"><a href="#问题场景" class="headerlink" title="问题场景"></a>问题场景</h3><ul><li><p>走定时任务时同时走<code>MQ</code>导致消息消费失败，查询消息状态为<code>NOT_CONSUME_YET</code>。</p><p>原因：跑定时任务的时候机器涉及大量数据库操作占有大量的核心内存资源，导致同时跑<code>MQ</code>的时候机器资源不够用了，导致消息消费多次失败。</p></li><li><p>修改<code>MQ</code>配置后，再接收消息在控制台发现消息状态为<code>NOT_ONLINE</code></p><p>原因：要么是订阅端没有启动要么就是订阅端对<code>MQ</code>没有心跳，建议查端口，然后启动一下。</p></li><li><p>待补充…</p></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 工作 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MQ </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Stream流常见方法浅析</title>
       <link href="/record/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"/>
       <url>/record/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/</url>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="MQ一般问题发现的流程是发现消息收不到，然后到控制台去查询消息状态。结果发现可能是XXXX。这里就明确一下消息投递的异常状态，和造成这种异常状态的常见的原因。本文的MQ指的是RocketMQ。 消息状态 NOT_ONLINE 订阅端不在线（未启动）  CONSUMED 已消费（正常状态）  CONSUMED_BUT_FILTERED 消息已经被投递且被过滤。（一个消费组能同时订阅多个 tag，但一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMQ消息状态异常问题排查">
+<meta property="og:url" content="https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/index.html">
+<meta property="og:site_name" content="dianedii&#96;blog">
+<meta property="og:description" content="MQ一般问题发现的流程是发现消息收不到，然后到控制台去查询消息状态。结果发现可能是XXXX。这里就明确一下消息投递的异常状态，和造成这种异常状态的常见的原因。本文的MQ指的是RocketMQ。 消息状态 NOT_ONLINE 订阅端不在线（未启动）  CONSUMED 已消费（正常状态）  CONSUMED_BUT_FILTERED 消息已经被投递且被过滤。（一个消费组能同时订阅多个 tag，但一">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-10-09T02:25:27.000Z">
+<meta property="article:modified_time" content="2022-11-16T03:03:31.907Z">
+<meta property="article:author" content="戴安">
+<meta property="article:tag" content="MQ">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/record/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/record/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/record/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>RocketMQ消息状态异常问题排查</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/record/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/record/2022/11/15/%E4%B8%80%E6%AC%A1%E7%94%9F%E4%BA%A7%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%AE%9E%E4%BE%8B/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/record/2022/09/11/Stream-%E6%B5%81%E5%B8%B8%E8%A7%81%E6%96%B9%E6%B3%95%E6%B5%85%E6%9E%90/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&text=RocketMQ消息状态异常问题排查"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&is_video=false&description=RocketMQ消息状态异常问题排查"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=RocketMQ消息状态异常问题排查&body=Check out this article: https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&name=RocketMQ消息状态异常问题排查&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&t=RocketMQ消息状态异常问题排查"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81"><span class="toc-number">1.</span> <span class="toc-text">消息状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%9C%BA%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">问题场景</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        RocketMQ消息状态异常问题排查
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">戴安</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-10-09T02:25:27.000Z" itemprop="datePublished">2022-10-09</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/record/categories/%E5%B7%A5%E4%BD%9C/">工作</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/record/tags/MQ/" rel="tag">MQ</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p><code>MQ</code>一般问题发现的流程是发现消息收不到，然后到控制台去查询消息状态。结果发现可能是<code>XXXX</code>。这里就明确一下消息投递的异常状态，和造成这种异常状态的常见的原因。本文的<code>MQ</code>指的是<code>RocketMQ</code>。</p>
+<h3 id="消息状态"><a href="#消息状态" class="headerlink" title="消息状态"></a>消息状态</h3><ul>
+<li><p><code>NOT_ONLINE</code></p>
+<p>订阅端不在线（未启动）</p>
+</li>
+<li><p><code>CONSUMED</code></p>
+<p>已消费（正常状态）</p>
+</li>
+<li><p><code>CONSUMED_BUT_FILTERED</code></p>
+<p>消息已经被投递且被过滤。（一个消费组能同时订阅多个 tag，但一个消费组的不同消费者不能分开订阅不同的tag，即同一个消费组的订阅关系必须保持一样。）</p>
+</li>
+<li><p><code>NOT_CONSUME_YET</code></p>
+<p>暂未消费（尝试多次消费失败）</p>
+</li>
+<li><p><code>UNKNOWN</code></p>
+<p>未知状态（原因比较多）</p>
+</li>
+</ul>
+<h3 id="问题场景"><a href="#问题场景" class="headerlink" title="问题场景"></a>问题场景</h3><ul>
+<li><p>走定时任务时同时走<code>MQ</code>导致消息消费失败，查询消息状态为<code>NOT_CONSUME_YET</code>。</p>
+<p>原因：跑定时任务的时候机器涉及大量数据库操作占有大量的核心内存资源，导致同时跑<code>MQ</code>的时候机器资源不够用了，导致消息消费多次失败。</p>
+</li>
+<li><p>修改<code>MQ</code>配置后，再接收消息在控制台发现消息状态为<code>NOT_ONLINE</code></p>
+<p>原因：要么是订阅端没有启动要么就是订阅端对<code>MQ</code>没有心跳，建议查端口，然后启动一下。</p>
+</li>
+<li><p>待补充…</p>
+</li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/record/">Home</a></li>
+         
+          <li><a href="/record/about/">About</a></li>
+         
+          <li><a href="/record/archives/">Writing</a></li>
+         
+          <li><a href="/record/categories/">categories</a></li>
+         
+          <li><a href="/record/tags/">Tag</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81"><span class="toc-number">1.</span> <span class="toc-text">消息状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E5%9C%BA%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">问题场景</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&text=RocketMQ消息状态异常问题排查"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&is_video=false&description=RocketMQ消息状态异常问题排查"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=RocketMQ消息状态异常问题排查&body=Check out this article: https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&title=RocketMQ消息状态异常问题排查"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&name=RocketMQ消息状态异常问题排查&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://dianedii.github.io/2022/10/09/RocketMQ%E6%B6%88%E6%81%AF%E7%8A%B6%E6%80%81%E5%BC%82%E5%B8%B8%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/&t=RocketMQ消息状态异常问题排查"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2021
+    戴安
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/record/">Home</a></li><!--
+     --><!--
+       --><li><a href="/record/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/record/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/record/categories/">categories</a></li><!--
+     --><!--
+       --><li><a href="/record/tags/">Tag</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/record/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
